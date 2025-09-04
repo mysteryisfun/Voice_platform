@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Agent Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            min-height: 100vh;
+        }
+
+        .dashboard-header {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .back-btn {
+            background: #f8fafc;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+            transition: all 0.2s ease;
+        }
+
+        .back-btn:hover {
+            background: #e2e8f0;
+            color: #1e293b;
+        }
+
+        .header-title {
+            font-size: 1.75rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a6fd8;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            transition: transform 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.25rem;
+        }
+
+        .stat-icon.agents { background: linear-gradient(135deg, #667eea, #5a6fd8); }
+        .stat-icon.configured { background: linear-gradient(135deg, #10b981, #059669); }
+        .stat-icon.active { background: linear-gradient(135deg, #f59e0b, #d97706); }
+
+        .stat-content h3 {
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 0;
+        }
+
+        .stat-content p {
+            color: #64748b;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin: 0.25rem 0 0 0;
+        }
+
+        .agents-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .section-header h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin: 0;
+        }
+
+        .btn-ghost {
+            background: none;
+            border: 1px solid #667eea;
+            color: #667eea;
+        }
+
+        .btn-ghost:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .agents-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .agent-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .agent-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .agent-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .agent-info h4 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin: 0;
+        }
+
+        .agent-company {
+            color: #64748b;
+            font-size: 0.875rem;
+            margin: 0.25rem 0 0 0;
+        }
+
+        .agent-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+
+        .agent-status.active {
+            background: rgba(245, 158, 11, 0.1);
+            color: #d97706;
+        }
+
+        .agent-status.created {
+            background: rgba(107, 114, 128, 0.1);
+            color: #6b7280;
+        }
+
+        .agent-details {
+            margin: 1rem 0;
+            font-size: 0.875rem;
+            color: #64748b;
+        }
+
+        .agent-details p {
+            margin: 0.25rem 0;
+        }
+
+        .agent-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: #64748b;
+        }
+
+        .empty-icon {
+            width: 80px;
+            height: 80px;
+            background: #f8fafc;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-size: 2rem;
+            color: #94a3b8;
+        }
+
+        .empty-state h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin: 0 0 0.5rem 0;
+        }
+
+        .empty-state p {
+            margin: 0 0 2rem 0;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #64748b;
+        }
+
+        .error {
+            background: #fee2e2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <div class="dashboard-header">
+            <div class="header-left">
+                <button class="back-btn" onclick="goToLanding()">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <h1 class="header-title">Agent Dashboard</h1>
+            </div>
+            <button class="btn btn-primary" onclick="goToCreateAgent()">
+                <i class="fas fa-plus"></i>
+                Create New Agent
+            </button>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon agents">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 id="total-agents">-</h3>
+                    <p>Total Agents</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon configured">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 id="configured-agents">-</h3>
+                    <p>Configured</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon active">
+                    <i class="fas fa-play-circle"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 id="active-agents">-</h3>
+                    <p>Active</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Agents Section -->
+        <div class="agents-section">
+            <div class="section-header">
+                <h3>Your Voice Agents</h3>
+                <button class="btn btn-ghost" onclick="loadDashboard()">
+                    <i class="fas fa-refresh"></i>
+                    Refresh
+                </button>
+            </div>
+
+            <div id="loading" class="loading">
+                <i class="fas fa-spinner fa-spin"></i> Loading agents...
+            </div>
+
+            <div id="agents-grid" class="agents-grid hidden">
+                <!-- Agent cards will be loaded here -->
+            </div>
+
+            <div id="empty-state" class="empty-state hidden">
+                <div class="empty-icon">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <h3>No Voice Agents Yet</h3>
+                <p>Create your first AI voice agent to get started</p>
+                <button class="btn btn-primary" onclick="goToCreateAgent()">
+                    <i class="fas fa-plus"></i>
+                    Create Your First Agent
+                </button>
+            </div>
+
+            <div id="error-state" class="error hidden">
+                <strong>Error:</strong> <span id="error-message">Failed to load agents</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API Configuration
+        const API_BASE_URL = 'http://localhost:8000/api';
+
+        // Navigation Functions
+        function goToLanding() {
+            window.location.href = 'index.html';
+        }
+
+        function goToCreateAgent() {
+            window.location.href = 'index.html#onboarding';
+        }
+
+        // API Client
+        class ApiClient {
+            static async get(endpoint) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}${endpoint}`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return await response.json();
+                } catch (error) {
+                    console.error('API GET Error:', error);
+                    throw error;
+                }
+            }
+
+            static async post(endpoint, data) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(data)
+                    });
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return await response.json();
+                } catch (error) {
+                    console.error('API POST Error:', error);
+                    throw error;
+                }
+            }
+
+            static async delete(endpoint) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                        method: 'DELETE'
+                    });
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return await response.json();
+                } catch (error) {
+                    console.error('API DELETE Error:', error);
+                    throw error;
+                }
+            }
+        }
+
+        // Dashboard Functions
+        async function loadDashboard() {
+            console.log('Loading dashboard...');
+            
+            // Show loading state
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('agents-grid').classList.add('hidden');
+            document.getElementById('empty-state').classList.add('hidden');
+            document.getElementById('error-state').classList.add('hidden');
+
+            try {
+                const response = await ApiClient.get('/agents');
+                console.log('Dashboard response:', response);
+
+                // Update stats
+                updateStats(response);
+
+                // Hide loading
+                document.getElementById('loading').classList.add('hidden');
+
+                if (response.agents && response.agents.length > 0) {
+                    renderAgents(response.agents);
+                    document.getElementById('agents-grid').classList.remove('hidden');
+                } else {
+                    document.getElementById('empty-state').classList.remove('hidden');
+                }
+
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                
+                // Hide loading and show error
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('error-state').classList.remove('hidden');
+                document.getElementById('error-message').textContent = error.message;
+            }
+        }
+
+        function updateStats(data) {
+            document.getElementById('total-agents').textContent = data.total || 0;
+            document.getElementById('configured-agents').textContent = data.configured_count || 0;
+            
+            const activeCount = data.agents ? data.agents.filter(a => a.status === 'active').length : 0;
+            document.getElementById('active-agents').textContent = activeCount;
+        }
+
+        function renderAgents(agents) {
+            const grid = document.getElementById('agents-grid');
+            
+            grid.innerHTML = agents.map(agent => `
+                <div class="agent-card">
+                    <div class="agent-card-header">
+                        <div class="agent-info">
+                            <h4>${agent.name ? `${agent.name} (Agent ${agent.id})` : `Agent ${agent.id}`}</h4>
+                            <p class="agent-company">${agent.company_name || 'No company set'}</p>
+                        </div>
+                        <span class="agent-status ${agent.status || 'created'}">${agent.status || 'created'}</span>
+                    </div>
+                    
+                    <div class="agent-details">
+                        <p><strong>Role:</strong> ${agent.agent_role || 'Not set'}</p>
+                        <p><strong>Voice:</strong> ${agent.voice_id || 'Not set'}</p>
+                        <p><strong>Tools:</strong> ${agent.enabled_tools || 'None'}</p>
+                        <p><strong>Created:</strong> ${agent.created_at ? new Date(agent.created_at).toLocaleDateString() : 'Unknown'}</p>
+                    </div>
+                    
+                    <div class="agent-actions" onclick="event.stopPropagation()">
+                        <button class="btn btn-ghost btn-small" onclick="testAgent(${agent.id})" ${agent.status !== 'active' ? 'disabled' : ''}>
+                            <i class="fas fa-play"></i>
+                            Test
+                        </button>
+                        <button class="btn btn-ghost btn-small" onclick="deployVoiceAgent(${agent.id})" id="deploy-btn-${agent.id}">
+                            <i class="fas fa-rocket"></i>
+                            Deploy Voice
+                        </button>
+                        <button class="btn btn-ghost btn-small" onclick="testVoiceAgent(${agent.id})" id="test-btn-${agent.id}" style="display:none;">
+                            <i class="fas fa-microphone"></i>
+                            Test Voice
+                        </button>
+                        <button class="btn btn-ghost btn-small" onclick="stopVoiceAgent(${agent.id})" id="stop-btn-${agent.id}" style="display:none; color: #dc2626; border-color: #dc2626;">
+                            <i class="fas fa-stop"></i>
+                            Stop Voice
+                        </button>
+                        <button class="btn btn-ghost btn-small" onclick="toggleAgentStatus(${agent.id}, '${agent.status || 'created'}')">
+                            <i class="fas fa-power-off"></i>
+                            ${agent.status === 'active' ? 'Deactivate' : 'Activate'}
+                        </button>
+                        <button class="btn btn-ghost btn-small" onclick="deleteAgent(${agent.id})" style="color: #dc2626; border-color: #dc2626;">
+                            <i class="fas fa-trash"></i>
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Agent Actions
+        function testAgent(agentId) {
+            // Open voice test page for the specific agent
+            window.open(`voice-test.html?agentId=${agentId}`, '_blank');
+        }
+
+        async function toggleAgentStatus(agentId, currentStatus) {
+            try {
+                const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+                await ApiClient.post(`/agents/${agentId}/status`, { status: newStatus });
+                loadDashboard(); // Refresh
+            } catch (error) {
+                alert('Failed to update agent status: ' + error.message);
+            }
+        }
+
+        async function deleteAgent(agentId) {
+            if (confirm('Are you sure you want to delete this agent? This action cannot be undone.')) {
+                try {
+                    await ApiClient.delete(`/agents/${agentId}`);
+                    loadDashboard(); // Refresh
+                } catch (error) {
+                    alert('Failed to delete agent: ' + error.message);
+                }
+            }
+        }
+
+        // Voice Agent Control Functions
+        async function deployVoiceAgent(agentId) {
+            try {
+                const deployBtn = document.getElementById(`deploy-btn-${agentId}`);
+                const testBtn = document.getElementById(`test-btn-${agentId}`);
+                const stopBtn = document.getElementById(`stop-btn-${agentId}`);
+                
+                deployBtn.disabled = true;
+                deployBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deploying...';
+                
+                const response = await fetch(`${API_BASE}/voice/${agentId}/deploy`, {
+                    method: 'POST'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Deployment failed: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showNotification('Voice agent deployment started!', 'success');
+                    
+                    // Update button states
+                    deployBtn.style.display = 'none';
+                    testBtn.style.display = 'inline-block';
+                    stopBtn.style.display = 'inline-block';
+                    
+                    // Check deployment status
+                    setTimeout(() => checkVoiceAgentStatus(agentId), 3000);
+                } else {
+                    throw new Error(result.message || 'Deployment failed');
+                }
+                
+            } catch (error) {
+                showNotification(`Failed to deploy voice agent: ${error.message}`, 'error');
+                
+                // Reset button
+                const deployBtn = document.getElementById(`deploy-btn-${agentId}`);
+                deployBtn.disabled = false;
+                deployBtn.innerHTML = '<i class="fas fa-rocket"></i> Deploy Voice';
+            }
+        }
+        
+        async function testVoiceAgent(agentId) {
+            try {
+                // Create a voice session
+                const response = await fetch(`${API_BASE}/voice/${agentId}/session`, {
+                    method: 'POST'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to create voice session: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Open voice test modal
+                    showVoiceTestModal(agentId, result);
+                } else {
+                    throw new Error(result.message || 'Failed to create voice session');
+                }
+                
+            } catch (error) {
+                showNotification(`Failed to start voice test: ${error.message}`, 'error');
+            }
+        }
+        
+        async function stopVoiceAgent(agentId) {
+            try {
+                const deployBtn = document.getElementById(`deploy-btn-${agentId}`);
+                const testBtn = document.getElementById(`test-btn-${agentId}`);
+                const stopBtn = document.getElementById(`stop-btn-${agentId}`);
+                
+                stopBtn.disabled = true;
+                stopBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Stopping...';
+                
+                const response = await fetch(`${API_BASE}/voice/${agentId}/stop`, {
+                    method: 'POST'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to stop voice agent: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showNotification('Voice agent stopped successfully!', 'success');
+                    
+                    // Update button states
+                    deployBtn.style.display = 'inline-block';
+                    testBtn.style.display = 'none';
+                    stopBtn.style.display = 'none';
+                } else {
+                    throw new Error(result.message || 'Failed to stop voice agent');
+                }
+                
+            } catch (error) {
+                showNotification(`Failed to stop voice agent: ${error.message}`, 'error');
+                
+                // Reset button
+                const stopBtn = document.getElementById(`stop-btn-${agentId}`);
+                stopBtn.disabled = false;
+                stopBtn.innerHTML = '<i class="fas fa-stop"></i> Stop Voice';
+            }
+        }
+        
+        function showVoiceTestModal(agentId, sessionInfo) {
+            // Create and show a modal for voice testing
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content voice-test-modal">
+                    <div class="modal-header">
+                        <h3>🎤 Voice Agent Test</h3>
+                        <button onclick="closeVoiceTestModal()" class="close-btn">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="voice-test-info">
+                            <h4>${sessionInfo.agent_name}</h4>
+                            <p>Voice ID: ${sessionInfo.voice_id}</p>
+                            <p>Room: ${sessionInfo.room_name}</p>
+                            <p>Status: ${sessionInfo.status}</p>
+                        </div>
+                        
+                        <div class="voice-controls">
+                            <button onclick="startVoiceCall('${sessionInfo.room_name}')" class="btn btn-primary">
+                                <i class="fas fa-phone"></i> Start Voice Call
+                            </button>
+                            <p class="voice-instructions">
+                                Click to start a voice conversation with your AI agent. 
+                                This would open a LiveKit client interface.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        }
+        
+        function closeVoiceTestModal() {
+            const modal = document.querySelector('.modal-overlay');
+            if (modal) {
+                modal.remove();
+            }
+        }
+        
+        function startVoiceCall(roomName) {
+            alert(`Voice call would start for room: ${roomName}\\n\\nThis would typically open a LiveKit client interface where you can test the voice agent.`);
+        }
+
+        // Load dashboard on page load
+        document.addEventListener('DOMContentLoaded', loadDashboard);
+    </script>
+</body>
+</html>

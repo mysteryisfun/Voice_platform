@@ -1,103 +1,299 @@
 # Voice Agent Platform - Execution Plan
 
-## Project Summary
+## Project Summary & Current Status (September 2025)
 
-**Voice Agent Deployment Platform** is an AI-powered system that enables businesses to create intelligent conversational voice agents through a streamlined onboarding process. The platform automatically scrapes business data, conducts AI-driven interviews, and deploys embeddable voice widgets that can handle customer inquiries, capture leads, and book appointments.
+**Voice Agent Deployment Platform** is an AI-powered system that enables businesses to create intelligent conversational voice agents through a streamlined onboarding process. 
 
-### Core Flow
-1. **Business Input**: Company provides website URL + documents
-2. **AI Onboarding**: Dynamic interview generates 8-12 contextual questions
-3. **Data Processing**: Parallel web scraping (Tavily) + PDF parsing into vector database
-4. **Agent Creation**: RAG-powered voice agent with business-specific knowledge
-5. **Deployment**: Embeddable widget with LiveKit voice infrastructure
+### ✅ **COMPLETED PHASES (1-4)**
+- **Foundation Setup**: Complete FastAPI backend + frontend infrastructure
+- **Data Pipeline**: ChromaDB vector storage, OpenAI integration, async processing
+- **Onboarding System**: AI-driven interviews, document processing, web scraping
+- **Agent Management**: Professional dashboard with CRUD operations
 
-### Tech Stack
-- **Backend**: FastAPI + ChromaDB + OpenAI GPT-4o mini + LiveKit
-- **Frontend**: Simple npm application with minimal dashboard
-- **External**: Tavily API (web scraping), Calendar MCP (booking)
+### 🎯 **CURRENT STATUS: Ready for LiveKit Voice Integration**
+The platform has a solid foundation with 6 created agents, 175+ knowledge chunks, and a fully operational management dashboard. All supporting infrastructure is complete and ready for voice functionality.
 
----
-
-## Phase-by-Phase Development Plan
-
-## Phase 1: Foundation Setup (Week 1-2)
-
-### Backend Foundation
-1. **Environment Setup**
-   ```
-   Tasks:
-   - Create Python virtual environment (.venv)
-   - Install FastAPI, Uvicorn, SQLite, Pydantic
-   - Set up project structure: /backend with /routes, /models, /services
-   - Create .env file for API keys (OpenAI, Tavily, LiveKit)
-   ```
-
-2. **Database Models**
-   ```
-   Tasks:
-   - Create SQLAlchemy models for: Agent, OnboardingSession, Lead, Appointment
-   - Set up SQLite database initialization
-   - Create database connection and session management
-   ```
-
-3. **Basic API Structure**
-   ```
-   Tasks:
-   - FastAPI app initialization with CORS
-   - Health check endpoint GET /health
-   - Basic error handling middleware
-   - Response models with Pydantic
-   ```
-
-### Frontend Foundation
-1. **Project Setup**
-   ```
-   Tasks:
-   - Initialize npm project in /frontend
-   - Install dependencies: vanilla JS/HTML/CSS or lightweight framework
-   - Create basic file structure: /src, /public, /components
-   - Set up build process and development server
-   ```
-
-2. **Basic Layout**
-   ```
-   Tasks:
-   - Create main dashboard layout
-   - Navigation structure for: Agents, Onboarding, Analytics
-   - Responsive design foundation
-   - API communication utilities
-   ```
-
-### Testing Phase 1
-```
-Tests:
-- Backend: Health endpoint responds correctly
-- Backend: Database models create tables successfully
-- Frontend: Application starts and loads correctly
-- Frontend: Can make basic API calls to backend
-- Integration: CORS working between frontend/backend
-```
+### Core Flow (Currently Working)
+1. ✅ **Business Input**: Company provides website URL + documents
+2. ✅ **AI Onboarding**: Dynamic interview generates contextual questions (5-question limit)
+3. ✅ **Data Processing**: Parallel web scraping (Tavily) + PDF parsing into ChromaDB
+4. ✅ **Agent Creation**: Knowledge-based agent configuration with business-specific data
+5. ⏳ **Voice Deployment**: LiveKit voice infrastructure (NEXT PHASE)
+6. ⏳ **Widget Integration**: Embeddable voice widgets (NEXT PHASE)
 
 ---
 
-## Phase 2: Core Data Pipeline (Week 3-4)
+## Phase 5: LiveKit Voice Integration (Current Priority)
 
-### Backend Data Processing
-1. **ChromaDB Integration**
+### Overview
+Transform existing text-based agents into fully functional voice agents using LiveKit's real-time infrastructure.
+
+### Week 1: LiveKit Backend Foundation
+
+#### Day 1-2: Environment Setup
+```bash
+# Install LiveKit dependencies
+pip install livekit-agents livekit-api
+
+# Update requirements.txt
+echo "livekit-agents==0.8.0" >> requirements.txt
+echo "livekit-api==0.5.0" >> requirements.txt
+```
+
+**Tasks:**
+1. **LiveKit Account Setup**
+   - Create LiveKit Cloud account
+   - Get API keys and add to .env file
+   - Test basic connectivity
+
+2. **Service Architecture**
    ```
-   Tasks:
-   - Install and configure ChromaDB for vector storage
-   - Create vector operations service: embed, store, search
-   - Document chunking and preprocessing utilities
-   - Test with sample business data
+   backend/services/
+   ├── livekit_service.py      # Room management, tokens
+   ├── voice_agent.py          # Core voice processing logic  
+   ├── voice_tools.py          # Agent tools (RAG, lead capture)
+   └── webhook_handler.py      # LiveKit event processing
    ```
 
-2. **OpenAI Integration**
+#### Day 3-4: Core Voice Agent Implementation
+**File: `backend/services/voice_agent.py`**
+```python
+class VoiceAgent:
+    def __init__(self, agent_id: int, chromadb_collection: str):
+        self.agent_id = agent_id
+        self.knowledge_base = chromadb_collection
+        self.conversation_state = {}
+    
+    async def process_speech(self, audio_input):
+        # STT → Intent Recognition → RAG → Response → TTS
+        pass
+    
+    async def handle_conversation_turn(self, transcript: str):
+        # Main conversation processing logic
+        pass
+```
+
+**Integration Points:**
+- Connect to existing ChromaDB collections for RAG
+- Use current OpenAI service for response generation
+- Leverage existing agent configurations from database
+
+#### Day 5: API Endpoints
+**New routes in `backend/routes/voice.py`:**
+```python
+@router.post("/voice/token/{agent_id}")
+async def generate_voice_token(agent_id: int):
+    # Generate LiveKit access token for specific agent
+    pass
+
+@router.post("/voice/deploy/{agent_id}")  
+async def deploy_voice_agent(agent_id: int):
+    # Deploy agent to LiveKit room
+    pass
+
+@router.get("/voice/status/{agent_id}")
+async def get_voice_status(agent_id: int):
+    # Check deployment and session status
+    pass
+
+@router.post("/voice/webhook")
+async def handle_livekit_webhook(request: Request):
+    # Process LiveKit events and callbacks
+    pass
+```
+
+### Week 2: Frontend Voice Interface
+
+#### Day 1-2: LiveKit Client Integration
+**Install Frontend Dependencies:**
+```bash
+cd frontend
+npm install @livekit/components-js @livekit/components-styles
+```
+
+**Tasks:**
+1. **Voice Test Interface**
+   - Replace current placeholder "Test" button with functional voice testing
+   - Implement LiveKit client connection
+   - Real-time conversation display with transcript
+
+2. **UI Components:**
    ```
-   Tasks:
-   - OpenAI client setup with GPT-4o mini
-   - Dynamic question generation service
-   - Response validation and follow-up logic
+   frontend/src/components/
+   ├── VoiceTestModal.js       # Voice testing interface
+   ├── ConversationDisplay.js  # Real-time transcript
+   ├── VoiceControls.js        # Start/stop, mute controls
+   └── WidgetPreview.js        # Widget customization preview
+   ```
+
+#### Day 3-4: Widget Generation System
+**Tasks:**
+1. **Widget Generator**
+   - Customization panel (colors, positioning, branding)
+   - Real-time preview of widget appearance
+   - Generate embeddable JavaScript code
+
+2. **Dashboard Integration**
+   - Update agent cards to show voice deployment status
+   - Add voice-specific configuration options
+   - Display active voice sessions
+
+#### Day 5: Testing and Integration
+**Tasks:**
+1. **End-to-End Testing**
+   - Create voice agent through existing onboarding
+   - Deploy to LiveKit and test voice interaction
+   - Verify RAG responses using agent's knowledge base
+   - Test widget generation and embedding
+
+2. **Dashboard Updates**
+   - Voice deployment status indicators
+   - Active session monitoring
+   - Performance metrics display
+
+### Week 3: Production Polish
+
+#### Day 1-2: Agent Tools Implementation
+**Core Voice Agent Capabilities:**
+```python
+# backend/services/voice_tools.py
+class VoiceAgentTools:
+    async def knowledge_retrieval(self, query: str, agent_id: int):
+        # Use existing ChromaDB collection for RAG
+        pass
+    
+    async def lead_capture(self, conversation_context: dict):
+        # Collect visitor information during conversation
+        pass
+    
+    async def provide_business_info(self, info_type: str):
+        # Business hours, contact info from knowledge base
+        pass
+```
+
+#### Day 3-4: Widget Deployment
+**Embeddable Widget Implementation:**
+1. **Widget JavaScript Library**
+   ```javascript
+   // Static widget code that clients can embed
+   class VoiceAgentWidget {
+       constructor(config) {
+           this.agentId = config.agentId;
+           this.theme = config.theme;
+           this.position = config.position;
+       }
+       
+       async initialize() {
+           // Connect to LiveKit room for specific agent
+           // Handle voice session management
+       }
+   }
+   ```
+
+2. **Cross-Domain Integration**
+   - Safe iframe implementation
+   - CORS configuration for widget domains
+   - Mobile-responsive design
+
+#### Day 5: Performance Optimization
+**Optimization Targets:**
+- Voice latency < 500ms for natural conversation
+- Efficient ChromaDB queries for real-time RAG
+- Optimal LiveKit connection management
+- Memory usage optimization for concurrent sessions
+
+---
+
+## Technical Implementation Details
+
+### Integration with Existing Systems
+
+#### Leveraging Current Infrastructure
+✅ **ChromaDB Collections**: Each agent has isolated knowledge base ready for RAG  
+✅ **Agent Management**: Dashboard provides interface for voice deployment  
+✅ **OpenAI Integration**: GPT-4o mini setup ready for voice response generation  
+✅ **Async Processing**: Current patterns applicable to voice session management  
+
+#### Voice Data Flow
+```
+Browser → LiveKit Client → LiveKit Room → Voice Agent →
+ChromaDB RAG → OpenAI Response → TTS → Browser
+```
+
+### Development Environment Setup
+
+#### Backend Requirements
+```python
+# Additional dependencies for voice functionality
+livekit-agents==0.8.0      # Core voice agent framework
+livekit-api==0.5.0         # Room management and tokens
+```
+
+#### Frontend Requirements
+```javascript
+// LiveKit client libraries
+@livekit/components-js      // Voice session components
+@livekit/components-styles  // UI styling for voice interface
+```
+
+#### Environment Variables
+```bash
+# Add to .env file
+LIVEKIT_API_KEY=your_livekit_api_key
+LIVEKIT_API_SECRET=your_livekit_secret
+LIVEKIT_WS_URL=wss://your-project.livekit.cloud
+```
+
+---
+
+## Success Metrics
+
+### Phase 5 Completion Criteria
+- [ ] Voice agents can be deployed to LiveKit rooms
+- [ ] Real-time voice conversations using agent knowledge bases
+- [ ] Working widget generation with embeddable code
+- [ ] Voice testing interface in dashboard
+- [ ] End-to-end voice session from onboarding to deployment
+
+### Performance Targets
+- **Voice Latency**: < 500ms response time
+- **Knowledge Accuracy**: RAG responses using agent-specific data
+- **Session Stability**: Reliable voice connections
+- **Widget Integration**: Cross-domain embedding functionality
+
+---
+
+## Risk Mitigation
+
+### Technical Risks
+1. **LiveKit Learning Curve**: Allocate time for SDK familiarization
+2. **Voice Quality**: Test thoroughly with different audio conditions
+3. **Latency Issues**: Optimize RAG queries and response generation
+4. **Cross-Domain Security**: Ensure safe widget embedding
+
+### Mitigation Strategies
+- Start with simple voice echo test before full RAG integration
+- Use existing agent knowledge bases to minimize data pipeline changes
+- Implement comprehensive error handling for voice session failures
+- Test widget embedding on multiple domains and devices
+
+---
+
+## Post-Phase 5 Roadmap
+
+### Phase 6: Advanced Features (Week 4-5)
+- Calendar integration for appointment booking
+- Advanced analytics and conversation insights
+- Enhanced agent tools and capabilities
+- Multi-language support
+
+### Phase 7: Production Deployment (Week 6)
+- Performance optimization and scaling
+- Security hardening and compliance
+- Documentation and deployment guides
+- User onboarding and support materials
+
+**Current State**: Platform foundation complete, ready for voice integration development in next session.
    - Context building from previous answers
    ```
 

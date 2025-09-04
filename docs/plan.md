@@ -5,11 +5,183 @@
 **Platform Name**: Voice Agent Deployment Platform  
 **Purpose**: AI-powered platform that creates, configures, and deploys conversational voice agents for businesses  
 **Architecture**: Python FastAPI backend + Simple npm frontend + LiveKit voice infrastructure  
-**Target**: Proof of Concept with minimal viable functionality  
+**Current Status**: Phases 1-4 Complete - Ready for LiveKit Voice Integration
 
-## Core Value Proposition
+## Current Platform Status (September 2025)
 
-Businesses provide their website URL and documents → AI conducts dynamic onboarding interview → Platform automatically scrapes/parses business data → Creates context-aware voice agent → Deploys embeddable widget for client websites
+### ✅ **COMPLETED FUNCTIONALITY**
+- **Full Agent Creation Pipeline**: Onboarding with AI-driven questions, document processing, web scraping
+- **Knowledge Base System**: ChromaDB with agent-specific isolation, 175+ knowledge chunks across 6 agents
+- **Professional Dashboard**: Agent management interface with CRUD operations, status controls, detail modals
+- **Async Processing**: Fire-and-forget data processing with proper status tracking
+- **API Infrastructure**: Complete FastAPI backend with health monitoring, error handling, logging filters
+
+### 🎯 **IMMEDIATE NEXT PHASE: LiveKit Voice Integration**
+The platform foundation is complete. Next milestone is transforming text-based agents into fully functional voice agents.  
+
+## LiveKit Voice Integration Plan (Phase 5)
+
+### LiveKit Architecture Overview
+
+**LiveKit Components Needed:**
+- **LiveKit Cloud**: Hosted infrastructure for WebRTC and voice processing
+- **LiveKit Python SDK**: Server-side agent implementation (`livekit-agents`)
+- **LiveKit Client SDK**: Frontend JavaScript library for browser voice sessions
+- **LiveKit API**: Room management and token generation (`livekit-api`)
+
+### Backend Implementation Strategy
+
+#### 1. LiveKit Service Setup
+```python
+# New service: backend/services/livekit_service.py
+class LiveKitService:
+    - Room creation and management
+    - Access token generation for specific agents
+    - Agent deployment to rooms
+    - Webhook handling for session events
+```
+
+#### 2. Voice Agent Core Logic
+```python
+# New service: backend/services/voice_agent.py
+class VoiceAgent:
+    - STT processing using LiveKit's speech-to-text
+    - RAG integration with existing ChromaDB collections
+    - Response generation using OpenAI GPT-4o mini
+    - TTS output with natural voice synthesis
+    - Conversation state management
+    - Agent tool execution (lead capture, knowledge retrieval)
+```
+
+#### 3. New API Endpoints
+```
+POST /api/voice/token/{agent_id}
+- Generate LiveKit access token for specific agent
+- Include agent-specific room configuration
+- Return token + room details for frontend
+
+POST /api/voice/deploy/{agent_id}
+- Deploy agent to LiveKit room
+- Connect to agent's ChromaDB collection
+- Start voice processing pipeline
+- Return deployment status
+
+GET /api/voice/status/{agent_id}
+- Check if agent is deployed and active
+- Return room status and connection info
+- Monitor voice session health
+
+POST /api/voice/webhook
+- Handle LiveKit events (participant join/leave, errors)
+- Update agent status and session tracking
+- Log conversation events for analytics
+```
+
+### Frontend Implementation Strategy
+
+#### 1. Voice Testing Interface
+- Add "Test Voice" button to agent dashboard (replace current placeholder)
+- Implement LiveKit client connection for browser-based voice sessions
+- Real-time conversation display with transcript
+- Voice session controls (start/stop, mute, volume)
+
+#### 2. Widget Generation System
+- Widget customization panel (appearance, positioning, branding)
+- Generate embeddable JavaScript code
+- Widget preview functionality
+- Copy-to-clipboard with installation instructions
+
+#### 3. Agent Dashboard Enhancements
+- Voice deployment status indicators
+- Live session monitoring (active conversations)
+- Voice-specific configuration options
+- Performance metrics (voice quality, response time)
+
+### Integration with Existing Systems
+
+#### Leveraging Current Infrastructure
+- **ChromaDB Collections**: Use existing agent-specific knowledge bases for RAG
+- **Agent Management**: Extend current dashboard with voice capabilities
+- **OpenAI Integration**: Use existing GPT-4o mini setup for response generation
+- **Async Processing**: Apply current patterns to voice session management
+
+#### Data Flow Integration
+```
+Voice Input → LiveKit STT → RAG Query (ChromaDB) → 
+OpenAI Response → LiveKit TTS → Voice Output
+```
+
+### Agent Tools Implementation
+
+#### Core Voice Agent Capabilities
+1. **Knowledge Retrieval**: Answer questions using agent's ChromaDB collection
+2. **Lead Capture**: Collect visitor information during voice conversations
+3. **Business Information**: Provide hours, contact info, services from knowledge base
+4. **Conversation Handoff**: Escalate to human when needed
+
+#### Tool Execution Flow
+- Voice agent detects intent (knowledge query, lead capture, etc.)
+- Execute appropriate tool with conversation context
+- Return structured response through TTS
+- Update relevant databases (leads, analytics)
+
+### Technical Implementation Details
+
+#### LiveKit Python SDK Integration
+```python
+# Agent deployment process
+async def deploy_voice_agent(agent_id: int):
+    1. Get agent configuration from database
+    2. Connect to agent's ChromaDB collection
+    3. Create LiveKit room with agent-specific settings
+    4. Start voice processing pipeline
+    5. Register agent tools and capabilities
+    6. Update deployment status
+```
+
+#### Voice Session Management
+```python
+# Real-time voice processing
+async def handle_voice_session(room, participant):
+    1. STT: Convert speech to text
+    2. Intent Recognition: Understand user request
+    3. RAG Query: Search agent's knowledge base
+    4. Response Generation: Create contextual answer
+    5. TTS: Convert response to speech
+    6. Tool Execution: Handle lead capture, appointments
+```
+
+### Widget Deployment Strategy
+
+#### Embeddable Widget Components
+- **JavaScript Library**: Self-contained widget with LiveKit client
+- **Customization Options**: Colors, positioning, agent personality
+- **Cross-Domain Support**: Safe iframe or SDK integration
+- **Mobile Responsive**: Works on all device types
+
+#### Generated Widget Code Example
+```html
+<script src="https://platform.example.com/widget.js"></script>
+<div id="voice-agent-widget" 
+     data-agent-id="6" 
+     data-position="bottom-right"
+     data-theme="professional">
+</div>
+```
+
+### Performance and Scalability
+
+#### Optimization Targets
+- **Voice Latency**: < 500ms response time for natural conversation
+- **Concurrent Sessions**: Support multiple simultaneous voice conversations
+- **Resource Efficiency**: Optimal use of LiveKit and OpenAI API calls
+- **Knowledge Retrieval**: Fast ChromaDB queries for real-time responses
+
+#### Monitoring and Analytics
+- Voice session quality metrics
+- Conversation completion rates
+- Agent performance tracking
+- Lead conversion analytics
 
 ***
 
