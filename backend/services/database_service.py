@@ -37,6 +37,7 @@ class DatabaseService:
             current_question_number=1,
             total_questions_asked=0,
             questions_and_answers=[],
+            current_question=None,  # Will be set when first question is generated
             web_scraping_status="pending",
             document_processing_status="pending", 
             vector_embedding_status="pending"
@@ -53,6 +54,22 @@ class DatabaseService:
     def get_onboarding_session(db: Session, session_id: int) -> Optional[OnboardingSession]:
         """Get onboarding session by ID"""
         return db.query(OnboardingSession).filter(OnboardingSession.id == session_id).first()
+    
+    @staticmethod
+    def set_current_question(db: Session, session_id: int, question: str) -> OnboardingSession:
+        """Set the current question for the session"""
+        session = db.query(OnboardingSession).filter(OnboardingSession.id == session_id).first()
+        
+        if not session:
+            raise ValueError(f"Session {session_id} not found")
+        
+        session.current_question = question
+        session.updated_at = datetime.now()
+        
+        db.commit()
+        db.refresh(session)
+        
+        return session
     
     @staticmethod
     def add_question_answer(db: Session, session_id: int, question: str, answer: str) -> OnboardingSession:

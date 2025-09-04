@@ -14,59 +14,35 @@ class OpenAIService:
     def generate_first_question(self, initial_context: str = None) -> str:
         """Generate the first onboarding question"""
         
-        system_prompt = """You are an AI assistant helping to onboard businesses for voice agent creation.
-        You need to ask the right questions to understand their business and configure a voice agent.
-        
-        Start with fundamental business information. Ask ONE clear, specific question.
-        Keep questions conversational and easy to answer.
-        
-        Focus areas: company basics, industry, target audience, voice agent purpose.
-        """
-        
-        user_prompt = f"""Generate the first question to start business onboarding for voice agent creation.
-        
-        Initial context: {initial_context or 'No additional context provided'}
-        
-        Return only the question, no explanations."""
-        
-        try:
-            response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ],
-                max_tokens=150,
-                temperature=0.7
-            )
-            
-            return response.choices[0].message.content.strip()
-            
-        except Exception as e:
-            print(f"OpenAI API Error: {e}")
-            # Fallback question
-            return "What is your company name and what industry are you in?"
+        # Start with a simple, direct first question - no AI needed
+        return "What is your company name and what is your main business or service?"
     
     def generate_next_question(self, qa_history: List[Dict], current_count: int) -> Dict[str, Any]:
         """Generate next question based on conversation history"""
         
-        system_prompt = """You are an AI assistant conducting a business onboarding interview for voice agent creation.
+        # Force completion after 5 questions - we just need basics for voice agent
+        if current_count >= 5:
+            return {
+                "question": None,
+                "is_complete": True,
+                "reasoning": "Sufficient information collected for voice agent creation"
+            }
+        
+        system_prompt = """You are conducting a focused business onboarding for voice agent creation.
 
-        Based on the conversation history, generate the NEXT logical question to gather information for:
-        1. Business basics (company, industry, services)
-        2. Target audience and customers  
-        3. Voice agent purpose (support, sales, booking, info)
-        4. Agent personality and tone preferences
-        5. Business hours and availability
-        6. Specific terminology or compliance needs
+        Ask ONLY essential questions to create a functional voice agent:
+        1. Company name and main business
+        2. Primary service/product offered
+        3. Target customers (who calls)
+        4. Voice agent's main purpose (support, sales, booking, info)
+        5. Preferred tone (professional, friendly, casual)
 
         Rules:
-        - Ask ONE specific question
-        - Build on previous answers
-        - Avoid repeating covered topics
-        - Keep questions conversational
-        - Complete after 8-12 meaningful questions
-        - If sufficient info gathered, indicate completion
+        - Ask ONE specific, essential question
+        - Keep questions short and direct
+        - COMPLETE after 5 questions maximum
+        - Focus on voice agent functionality, not business investigation
+        - If you have enough info to create an agent, indicate completion
 
         Return JSON: {"question": "...", "is_complete": false, "reasoning": "why this question"}
         OR {"question": null, "is_complete": true, "reasoning": "sufficient information gathered"}
@@ -81,7 +57,7 @@ class OpenAIService:
         user_prompt = f"""Conversation so far:
 {conversation}
 
-Current question count: {current_count}
+Current question count: {current_count} of 5 maximum
 
 Generate the next question or indicate completion. Return valid JSON only."""
         
@@ -93,7 +69,7 @@ Generate the next question or indicate completion. Return valid JSON only."""
                     {"role": "user", "content": user_prompt}
                 ],
                 max_tokens=200,
-                temperature=0.7
+                temperature=0.3  # Lower temperature for more focused responses
             )
             
             import json

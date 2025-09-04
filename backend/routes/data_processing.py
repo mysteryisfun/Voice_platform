@@ -23,10 +23,10 @@ async def process_agent_data(
     db: Session = Depends(get_db)
 ):
     """
-    Process agent data - website scraping and/or PDF extraction
+    Process agent data - website scraping and/or PDF extraction (ASYNC - FIRE AND FORGET)
     """
     try:
-        print(f"Processing data for session {session_id}")
+        print(f"Starting background processing for session {session_id}")
         print(f"Website URL: {website_url}")
         print(f"PDF file: {pdf_file.filename if pdf_file else None}")
         
@@ -41,20 +41,27 @@ async def process_agent_data(
             pdf_bytes = await pdf_file.read()
             pdf_filename = pdf_file.filename
         
-        # Start async processing
-        result = await coordinator.process_agent_data(
+        # Start processing in background (FIRE AND FORGET)
+        import asyncio
+        asyncio.create_task(coordinator.process_agent_data(
             session_id=session_id,
             website_url=website_url,
             pdf_bytes=pdf_bytes,
             pdf_filename=pdf_filename,
             db=db
-        )
+        ))
         
-        return result
+        # Return immediately - don't wait for processing to complete
+        return {
+            "success": True,
+            "message": "Data processing started in background",
+            "session_id": session_id,
+            "status": "processing_started"
+        }
         
     except Exception as e:
         print(f"Process data error: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to process data: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to start processing: {str(e)}")
 
 
 @router.post("/test-chromadb/{agent_id}")

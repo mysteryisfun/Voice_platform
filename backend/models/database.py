@@ -86,6 +86,7 @@ class OnboardingSession(Base):
     
     # Q&A history
     questions_and_answers = Column(JSON)  # [{question: str, answer: str, timestamp: str}]
+    current_question = Column(Text)  # Store the current pending question
     
     # Processing status
     web_scraping_status = Column(String(20), default="pending")  # pending, in_progress, completed, failed

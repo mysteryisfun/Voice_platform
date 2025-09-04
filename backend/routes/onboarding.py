@@ -27,6 +27,9 @@ async def start_onboarding(request: OnboardingStartRequest, db: Session = Depend
         # Generate first question
         first_question = openai_service.generate_first_question(request.initial_context)
         
+        # Store the first question in the session
+        DatabaseService.set_current_question(db, session.id, first_question)
+        
         return OnboardingStartResponse(
             session_id=str(session.id),
             agent_id=agent.id,
@@ -52,9 +55,11 @@ async def submit_answer(request: OnboardingAnswerRequest, db: Session = Depends(
         print(f"DEBUG: Before update - Q&A count: {len(session.questions_and_answers or [])}")
         print(f"DEBUG: Current Q&A history: {session.questions_and_answers}")
         
-        # We need to reconstruct the question that was asked
-        # For now, we'll use a placeholder - in production, we'd store the asked question
-        current_question = f"Question {request.question_number}"
+        # Get the actual question that was asked
+        current_question = session.current_question
+        if not current_question:
+            # Fallback if no question stored (shouldn't happen in normal flow)
+            current_question = f"Question {request.question_number}"
         
         # Add Q&A to session
         updated_session = DatabaseService.add_question_answer(
@@ -73,6 +78,10 @@ async def submit_answer(request: OnboardingAnswerRequest, db: Session = Depends(
         next_result = openai_service.generate_next_question(qa_history, len(qa_history))
         
         print(f"DEBUG: OpenAI response: {next_result}")
+        
+        # Store the next question if not complete
+        if not next_result.get("is_complete", False) and next_result.get("question"):
+            DatabaseService.set_current_question(db, session_id, next_result["question"])
         
         return OnboardingAnswerResponse(
             session_id=str(session_id),

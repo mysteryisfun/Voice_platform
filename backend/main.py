@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 import uvicorn
 import os
+import logging
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -14,6 +15,14 @@ load_dotenv()
 
 from models import get_db, create_tables
 from routes import health, agents, onboarding, data_processing
+
+# Filter out health check logs
+class HealthCheckFilter(logging.Filter):
+    def filter(self, record):
+        return "/api/health" not in record.getMessage()
+
+# Apply filter to uvicorn access logger
+logging.getLogger("uvicorn.access").addFilter(HealthCheckFilter())
 
 # Create FastAPI app
 app = FastAPI(

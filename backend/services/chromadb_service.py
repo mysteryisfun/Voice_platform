@@ -14,11 +14,12 @@ load_dotenv()
 
 class ChromaDBService:
     def __init__(self):
-        # Initialize ChromaDB client (in-memory for POC)
-        self.client = chromadb.Client(Settings(
-            anonymized_telemetry=False,
-            allow_reset=True
-        ))
+        # Initialize ChromaDB client with persistent storage
+        # Create data directory if it doesn't exist
+        data_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "chromadb_data")
+        os.makedirs(data_path, exist_ok=True)
+        
+        self.client = chromadb.PersistentClient(path=data_path)
         
         # Initialize OpenAI for embeddings
         openai.api_key = os.getenv("OPENAI_API_KEY")

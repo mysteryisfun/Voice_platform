@@ -15,7 +15,7 @@ class TavilyService:
         api_key = os.getenv("TAVILY_API_KEY")
         self.client = TavilyClient(api_key)
     
-    async def scrape_website(self, url: str, max_depth: int = 5, max_breadth: int = 10) -> Dict:
+    async def scrape_website(self, url: str, max_depth: int = 1, max_breadth: int = 1) -> Dict:
         """Scrape website content using Tavily crawl API with domain filtering"""
         try:
             print(f"Starting Tavily crawl for: {url}")
