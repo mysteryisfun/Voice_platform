@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from models import get_db, create_tables
-from routes import health, agents, onboarding
+from routes import health, agents, onboarding, data_processing
 
 # Create FastAPI app
 app = FastAPI(
@@ -35,6 +35,7 @@ app.add_middleware(
 app.include_router(health.router, prefix="/api", tags=["health"])
 app.include_router(agents.router, prefix="/api", tags=["agents"])
 app.include_router(onboarding.router, prefix="/api", tags=["onboarding"])
+app.include_router(data_processing.router, prefix="/api/data", tags=["data-processing"])
 
 
 @app.on_event("startup")
