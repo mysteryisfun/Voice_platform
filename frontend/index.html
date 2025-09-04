@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Agent Platform</title>
+    <link rel="stylesheet" href="./src/styles/main.css">
+</head>
+<body>
+    <div id="app">
+        <header class="header">
+            <div class="container">
+                <h1 class="logo">Voice Agent Platform</h1>
+                <nav class="nav">
+                    <a href="#agents" class="nav-link active">Agents</a>
+                    <a href="#onboarding" class="nav-link">Create Agent</a>
+                    <a href="#analytics" class="nav-link">Analytics</a>
+                </nav>
+            </div>
+        </header>
+        
+        <main class="main">
+            <div class="container">
+                <div id="content">
+                    <!-- Dynamic content will be loaded here -->
+                    <div class="dashboard">
+                        <h2>Welcome to Voice Agent Platform</h2>
+                        <p>Your AI-powered voice agent deployment platform</p>
+                        
+                        <div class="status-cards">
+                            <div class="status-card">
+                                <h3>API Status</h3>
+                                <div id="api-status" class="status-indicator">Checking...</div>
+                            </div>
+                            <div class="status-card">
+                                <h3>Database</h3>
+                                <div id="db-status" class="status-indicator">Checking...</div>
+                            </div>
+                        </div>
+                        
+                        <div class="quick-actions">
+                            <button class="btn btn-primary" onclick="startOnboarding()">
+                                Create New Agent
+                            </button>
+                            <button class="btn btn-secondary" onclick="viewAgents()">
+                                View All Agents
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script type="module" src="./src/main.js"></script>
+</body>
+</html>

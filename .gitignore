@@ -1,0 +1,7 @@
+.venv
+.github
+context
+.env
+frontend/node_modules
+__pycache__
+tests/test_pdf.pdf
