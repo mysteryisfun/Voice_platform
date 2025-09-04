@@ -25,7 +25,7 @@ class DatabaseService:
             personality="professional",  # Default, can be updated
             tone="helpful",  # Default, can be updated
             language="en"
-        )
+        )   
         
         db.add(agent)
         db.flush()  # Get the agent ID
