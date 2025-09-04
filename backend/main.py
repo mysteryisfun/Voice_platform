@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from models import get_db, create_tables
-from routes import health, agents, onboarding, data_processing
+from routes import health, agents, onboarding, data_processing, voice_control
 
 # Filter out health check logs
 class HealthCheckFilter(logging.Filter):
@@ -45,6 +45,7 @@ app.include_router(health.router, prefix="/api", tags=["health"])
 app.include_router(agents.router, prefix="/api", tags=["agents"])
 app.include_router(onboarding.router, prefix="/api", tags=["onboarding"])
 app.include_router(data_processing.router, prefix="/api/data", tags=["data-processing"])
+app.include_router(voice_control.router, prefix="/api", tags=["voice-control"])
 
 
 @app.on_event("startup")

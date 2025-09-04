@@ -35,13 +35,14 @@ class OpenAIService:
         2. Primary service/product offered
         3. Target customers (who calls)
         4. Voice agent's main purpose (support, sales, booking, info)
-        5. Preferred tone (professional, friendly, casual)
+        5. Key business hours or availability
 
         Rules:
         - Ask ONE specific, essential question
         - Keep questions short and direct
         - COMPLETE after 5 questions maximum
         - Focus on voice agent functionality, not business investigation
+        - Do NOT ask about tone/voice style (already configured)
         - If you have enough info to create an agent, indicate completion
 
         Return JSON: {"question": "...", "is_complete": false, "reasoning": "why this question"}
@@ -109,6 +110,85 @@ Generate the next question or indicate completion. Return valid JSON only."""
                         "reasoning": "Fallback completion"
                     }
     
+    def generate_enhanced_system_prompt(self, qa_history: List[Dict], agent_name: str, company_name: str, 
+                                      identity_config, voice_config, tools_config) -> str:
+        """Generate enhanced system prompt with full configuration"""
+        
+        system_prompt = f"""Generate a comprehensive system prompt for a voice agent with the following configuration:
+
+        Agent Identity:
+        - Name: {agent_name}
+        - Role: {identity_config.agent_role}
+        - Company: {company_name}
+        - Greeting: {identity_config.greeting_message or 'Default greeting'}
+
+        Voice & Personality:
+        - Voice: {voice_config.voice_id}
+        - Personality: {voice_config.personality}
+        - Tone: {voice_config.tone}
+        - Speaking Speed: {voice_config.speaking_speed}
+        - Response Style: {voice_config.response_style}
+
+        Available Tools:
+        - {', '.join(tools_config.enabled_tools)}
+
+        Special Instructions:
+        {tools_config.special_instructions or 'None'}
+
+        Escalation Triggers:
+        {', '.join(tools_config.escalation_triggers) if tools_config.escalation_triggers else 'Standard escalation when unable to help'}
+
+        Generate a detailed system prompt that incorporates all this information."""
+        
+        # Format Q&A for context
+        qa_context = "\n".join([
+            f"Q: {qa['question']}\nA: {qa['answer']}" 
+            for qa in qa_history
+        ])
+        
+        user_prompt = f"""Business Information from Onboarding:
+{qa_context}
+
+{system_prompt}"""
+        
+        try:
+            response = self.client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "You are creating a system prompt for a voice agent. Make it comprehensive, professional, and actionable."},
+                    {"role": "user", "content": user_prompt}
+                ],
+                max_tokens=1000,
+                temperature=0.7
+            )
+            
+            return response.choices[0].message.content.strip()
+            
+        except Exception as e:
+            print(f"OpenAI API Error: {e}")
+            
+            # Fallback enhanced system prompt
+            tools_list = ', '.join(tools_config.enabled_tools)
+            greeting = identity_config.greeting_message or f"Hello! I'm {agent_name}, how can I help you today?"
+            special_instructions_text = f"Special instructions: {tools_config.special_instructions}" if tools_config.special_instructions else ""
+            
+            return f"""You are {agent_name}, a {voice_config.personality} voice assistant for {company_name} working as a {identity_config.agent_role}.
+
+Your role is to:
+- Greet customers with: "{greeting}"
+- Use a {voice_config.tone} tone with {voice_config.response_style} responses
+- Provide excellent customer service
+
+Available tools: {tools_list}
+
+Voice characteristics:
+- Speak at {voice_config.speaking_speed} speed
+- Maintain {voice_config.personality} personality throughout conversations
+
+{special_instructions_text}
+
+Always be helpful, accurate, and professional. If you cannot help with something, {', '.join(tools_config.escalation_triggers) if tools_config.escalation_triggers else 'offer to connect them with a human representative'}."""
+
     def generate_system_prompt(self, qa_history: List[Dict], company_name: str) -> str:
         """Generate system prompt for the voice agent based on onboarding Q&A"""
         

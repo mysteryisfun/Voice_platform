@@ -121,6 +121,59 @@ class DatabaseService:
         return session
     
     @staticmethod
+    def complete_enhanced_onboarding(db: Session, session_id: int, system_prompt: str, config) -> Agent:
+        """Complete onboarding with enhanced configuration"""
+        session = db.query(OnboardingSession).filter(OnboardingSession.id == session_id).first()
+        
+        if not session:
+            raise ValueError(f"Session {session_id} not found")
+        
+        # Get associated agent
+        agent = db.query(Agent).filter(Agent.id == session.agent_id).first()
+        
+        if not agent:
+            raise ValueError(f"Agent {session.agent_id} not found")
+        
+        # Update agent with enhanced configuration
+        agent.name = config.identity_config.agent_name
+        agent.agent_role = config.identity_config.agent_role
+        agent.greeting_message = config.identity_config.greeting_message
+        
+        # Voice configuration
+        agent.voice_id = config.voice_config.voice_id
+        agent.personality = config.voice_config.personality
+        agent.tone = config.voice_config.tone
+        agent.speaking_speed = config.voice_config.speaking_speed
+        agent.response_style = config.voice_config.response_style
+        
+        # Tools configuration
+        agent.enabled_tools = config.tools_config.enabled_tools
+        agent.escalation_triggers = config.tools_config.escalation_triggers
+        agent.special_instructions = config.tools_config.special_instructions
+        
+        # Extract company name from Q&A history if available
+        qa_history = session.questions_and_answers or []
+        for qa in qa_history:
+            if "company" in qa.get("question", "").lower():
+                agent.company_name = qa.get("answer", "").strip()
+                break
+        
+        agent.system_prompt = system_prompt
+        agent.status = AgentStatus.DEPLOYED  # Ready for deployment
+        agent.updated_at = datetime.now()
+        
+        # Update session status
+        session.status = OnboardingStatus.COMPLETED
+        session.completed_at = datetime.now()
+        session.updated_at = datetime.now()
+        
+        db.commit()
+        db.refresh(agent)
+        db.refresh(session)
+        
+        return agent
+    
+    @staticmethod
     def complete_onboarding(db: Session, session_id: int, system_prompt: str, agent_name: str, company_name: str) -> Agent:
         """Complete onboarding and update agent"""
         session = db.query(OnboardingSession).filter(OnboardingSession.id == session_id).first()

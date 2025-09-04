@@ -35,6 +35,38 @@ class OnboardingAnswerResponse(BaseModel):
     total_questions: int = Field(..., description="Total questions asked so far")
 
 
+# Enhanced onboarding configuration schemas
+class AgentIdentityConfig(BaseModel):
+    """Agent identity and role configuration"""
+    agent_name: str = Field(..., description="Custom agent name")
+    agent_role: str = Field(..., description="Agent role/title")
+    greeting_message: Optional[str] = Field(None, description="Custom greeting message")
+
+
+class VoiceConfig(BaseModel):
+    """Voice and personality configuration"""
+    voice_id: str = Field(..., description="Selected voice ID")
+    personality: str = Field(..., description="Agent personality")
+    tone: str = Field(..., description="Speaking tone")
+    speaking_speed: str = Field(default="normal", description="Speaking speed")
+    response_style: str = Field(default="balanced", description="Response length style")
+
+
+class ToolsConfig(BaseModel):
+    """Tools and escalation configuration"""
+    enabled_tools: List[str] = Field(..., description="List of enabled tool names")
+    escalation_triggers: List[str] = Field(default=[], description="Escalation conditions")
+    special_instructions: Optional[str] = Field(None, description="Special instructions")
+
+
+class OnboardingConfigRequest(BaseModel):
+    """Request to configure agent with enhanced settings"""
+    session_id: str = Field(..., description="Session identifier")
+    identity_config: AgentIdentityConfig
+    voice_config: VoiceConfig
+    tools_config: ToolsConfig
+
+
 class OnboardingStatusResponse(BaseModel):
     """Response for onboarding status check"""
     session_id: str = Field(..., description="Session identifier")
@@ -51,6 +83,7 @@ class OnboardingStatusResponse(BaseModel):
 class OnboardingCompleteRequest(BaseModel):
     """Request to complete onboarding"""
     session_id: str = Field(..., description="Session identifier")
+    configuration: OnboardingConfigRequest = Field(..., description="Final agent configuration")
 
 
 class OnboardingCompleteResponse(BaseModel):
@@ -69,3 +102,21 @@ class QuestionAndAnswer(BaseModel):
     answer: str = Field(..., description="The answer provided")
     timestamp: str = Field(..., description="When the answer was submitted")
     question_number: int = Field(..., description="Sequential question number")
+
+
+# Available voice options
+class VoiceOption(BaseModel):
+    """Available voice option"""
+    id: str = Field(..., description="Voice identifier")
+    name: str = Field(..., description="Display name")
+    description: str = Field(..., description="Voice description")
+    sample_url: Optional[str] = Field(None, description="Sample audio URL")
+
+
+class AvailableToolOption(BaseModel):
+    """Available tool option"""
+    id: str = Field(..., description="Tool identifier")
+    name: str = Field(..., description="Tool display name")
+    description: str = Field(..., description="Tool description")
+    category: str = Field(..., description="Tool category")
+    required: bool = Field(default=False, description="Whether tool is required")

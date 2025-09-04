@@ -50,6 +50,17 @@ class Agent(Base):
     language = Column(String(10), default="en")
     response_style = Column(String(50), default="balanced")  # concise, detailed, balanced
     
+    # Voice-specific configuration
+    agent_role = Column(String(100))  # e.g., "Customer Service Representative"
+    voice_id = Column(String(50), default="alloy")  # OpenAI voice: alloy, echo, fable, onyx, nova, shimmer, coral
+    speaking_speed = Column(String(20), default="normal")  # slow, normal, fast
+    greeting_message = Column(Text)  # Custom greeting
+    special_instructions = Column(Text)  # Additional instructions beyond system prompt
+    
+    # Agent tools configuration
+    enabled_tools = Column(JSON, default=list)  # List of enabled tool names
+    escalation_triggers = Column(JSON, default=list)  # Conditions for human escalation
+    
     # System configuration
     system_prompt = Column(Text)
     status = Column(String(20), default=AgentStatus.CREATED)
@@ -63,9 +74,25 @@ class Agent(Base):
     
     # Relationships
     onboarding_session = relationship("OnboardingSession", back_populates="agent", uselist=False)
+    voice_sessions = relationship("VoiceSession", back_populates="agent")
     leads = relationship("Lead", back_populates="agent")
     appointments = relationship("Appointment", back_populates="agent")
     knowledge_chunks = relationship("KnowledgeChunk", back_populates="agent")
+
+
+class VoiceSession(Base):
+    __tablename__ = "voice_sessions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    agent_id = Column(Integer, ForeignKey("agents.id"))
+    room_name = Column(String, unique=True, index=True)
+    status = Column(String, default="created")  # created, active, ended, error
+    created_at = Column(DateTime, default=datetime.utcnow)
+    ended_at = Column(DateTime, nullable=True)
+    duration_seconds = Column(Integer, nullable=True)
+    
+    # Relationship
+    agent = relationship("Agent", back_populates="voice_sessions")
 
 
 class OnboardingSession(Base):
