@@ -64,6 +64,7 @@ class Agent(Base):
     # System configuration
     system_prompt = Column(Text)
     status = Column(String(20), default=AgentStatus.CREATED)
+    is_configured = Column(Boolean, default=False)  # Whether agent configuration is complete
     livekit_room_id = Column(String(255))
     widget_config = Column(JSON)  # Widget styling and configuration
     

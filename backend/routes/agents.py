@@ -37,11 +37,15 @@ async def list_agents(db: Session = Depends(get_db)):
                 "personality": agent.personality,
                 "tone": agent.tone,
                 "language": agent.language,
+                "agent_role": agent.agent_role,
+                "voice_id": agent.voice_id,
+                "enabled_tools": agent.enabled_tools if agent.enabled_tools else [],
+                "greeting_message": agent.greeting_message,
                 "created_at": agent.created_at.isoformat() if agent.created_at else None,
                 "updated_at": agent.updated_at.isoformat() if agent.updated_at else None,
                 "knowledge_chunks": knowledge_stats.get("document_count", 0),
                 "questions_answered": len(session.questions_and_answers or []) if session else 0,
-                "is_configured": bool(agent.name and agent.company_name and agent.system_prompt)
+                "is_configured": agent.is_configured
             }
             agent_list.append(agent_data)
         
@@ -102,7 +106,7 @@ async def get_agent_details(agent_id: int, db: Session = Depends(get_db)):
                 "status": session.status if session else "not_started",
                 "completed_at": session.completed_at.isoformat() if session and session.completed_at else None
             },
-            "is_configured": bool(agent.name and agent.company_name and agent.system_prompt)
+            "is_configured": getattr(agent, 'is_configured', bool(agent.name and agent.company_name and agent.system_prompt))
         }
         
     except HTTPException:

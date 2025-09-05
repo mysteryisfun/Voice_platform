@@ -5,3 +5,4 @@ context
 frontend/node_modules
 __pycache__
 tests/test_pdf.pdf
+backend/chromadb_data/

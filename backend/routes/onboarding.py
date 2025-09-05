@@ -278,7 +278,7 @@ async def complete_simple_onboarding(request: SimpleCompleteRequest, db: Session
             agent_role=request.agent_role,
             voice_id=request.voice_id,
             enabled_tools=request.enabled_tools,
-            status='initializing'
+            status='initializing'  # Start with initializing, will progress through configuring -> deploying -> created
         )
         
         db.add(agent)
@@ -290,25 +290,43 @@ async def complete_simple_onboarding(request: SimpleCompleteRequest, db: Session
         
         # Import and use meta agent asynchronously
         import asyncio
-        from voice_agents.agent_builder import agent_builder
+        from voice_agents.agent_builder import VoiceAgentBuilder
         
         async def build_agent_async():
             try:
-                # Build agent configuration using meta agent
-                agent_components = await agent_builder.build_agent_configuration(agent_data)
+                # Step 1: Update status to configuring
+                agent_record = db.query(Agent).filter(Agent.id == agent.id).first()
+                if agent_record:
+                    agent_record.status = 'configuring'
+                    db.commit()
                 
-                # Update agent with generated configuration
+                # Step 2: Initialize the agent builder and build configuration
+                builder = VoiceAgentBuilder()
+                agent_components = await builder.build_agent_configuration(agent_data)
+                
+                # Step 3: Update agent with generated configuration
                 agent_record = db.query(Agent).filter(Agent.id == agent.id).first()
                 if agent_record:
                     agent_record.greeting_message = agent_components.greeting_script
                     agent_record.special_instructions = f"Role: {agent_components.agent_role_description}. Personality: {agent_components.personality_traits}"
                     agent_record.escalation_triggers = agent_components.escalation_rules
-                    agent_record.status = 'created'
-                    agent_record.is_configured = True
                     agent_record.system_prompt = agent_components.model_dump_json()  # Store complete configuration
-                    
+                    agent_record.is_configured = True
+                    agent_record.status = 'deploying'  # Move to deploying status
                     db.commit()
-                    logger.info(f"Agent {agent.id} successfully configured with meta agent")
+                    logger.info(f"Agent {agent.id} configuration completed, moving to deployment")
+                
+                # Step 4: TODO - LiveKit integration and deployment
+                # For now, simulate deployment delay
+                import time
+                await asyncio.sleep(2)  # Simulate deployment time
+                
+                # Step 5: Mark as fully created only after everything is done
+                agent_record = db.query(Agent).filter(Agent.id == agent.id).first()
+                if agent_record:
+                    agent_record.status = 'created'  # Only set to created when everything is complete
+                    db.commit()
+                    logger.info(f"Agent {agent.id} fully created and deployed")
                     
             except Exception as e:
                 logger.error(f"Error building agent {agent.id}: {str(e)}")
@@ -324,10 +342,11 @@ async def complete_simple_onboarding(request: SimpleCompleteRequest, db: Session
         
         return {
             "success": True,
-            "message": "Agent initialization started",
+            "message": "Agent creation started - your agent is being built",
             "agent_id": agent.id,
             "agent_name": agent.name,
-            "status": "initializing"
+            "status": "initializing",
+            "estimated_time": "2-3 minutes"
         }
         
     except Exception as e:

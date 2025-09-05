@@ -11,6 +11,7 @@ import logging
 from typing import Dict, Any, Optional
 from langchain_openai import ChatOpenAI
 from langchain.schema import HumanMessage
+from langchain.output_parsers import PydanticOutputParser
 from .prompts import get_meta_agent_prompt, AgentPromptComponents
 import os
 from dotenv import load_dotenv
@@ -29,6 +30,7 @@ class VoiceAgentBuilder:
             temperature=0.1,  # Low temperature for consistent, professional output
             api_key=os.getenv("OPENAI_API_KEY")
         )
+        self.parser = PydanticOutputParser(pydantic_object=AgentPromptComponents)
         self.meta_prompt = get_meta_agent_prompt()
     
     async def build_agent_configuration(self, onboarding_data: Dict[str, Any]) -> AgentPromptComponents:
@@ -47,21 +49,17 @@ class VoiceAgentBuilder:
             # Format the onboarding data for the meta agent
             formatted_data = self._format_onboarding_data(onboarding_data)
             
+            # Add format instructions to the formatted data
+            formatted_data['format_instructions'] = self.parser.get_format_instructions()
+            
             # Generate the prompt with onboarding data
             messages = self.meta_prompt.format_messages(**formatted_data)
             
             # Get response from meta agent
             response = await self.llm.ainvoke(messages)
             
-            # Parse the JSON response
-            agent_config_json = response.content.strip()
-            if agent_config_json.startswith("```json"):
-                agent_config_json = agent_config_json.replace("```json", "").replace("```", "").strip()
-            
-            agent_config_dict = json.loads(agent_config_json)
-            
-            # Create and validate the AgentPromptComponents
-            agent_components = AgentPromptComponents(**agent_config_dict)
+            # Parse the response using Pydantic parser
+            agent_components = self.parser.parse(response.content)
             
             logger.info(f"Successfully built agent configuration for: {agent_components.agent_name}")
             return agent_components

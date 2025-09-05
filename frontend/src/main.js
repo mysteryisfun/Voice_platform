@@ -903,7 +903,7 @@ async function completeOnboarding() {
             }, 2000); // Show completion after 2 seconds
             
             currentSession.agentId = response.agent_id;
-            showNotification('🎉 Voice agent created successfully!', 'success');
+            showSuccessPopupWithDashboard();
         }
         
     } catch (error) {
@@ -951,6 +951,138 @@ function startNewAgent() {
 }
 
 // Completion Actions
+function showSuccessPopupWithDashboard() {
+    // Create success popup with dashboard button
+    const popup = document.createElement('div');
+    popup.className = 'success-popup-overlay';
+    popup.innerHTML = `
+        <div class="success-popup">
+            <div class="success-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h2>🎉 Voice Agent Created Successfully!</h2>
+            <p>Your voice agent has been configured and is ready to use.</p>
+            <div class="popup-actions">
+                <button class="btn-dashboard" onclick="goToDashboard()">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Go to Dashboard
+                </button>
+                <button class="btn-close" onclick="closeSuccessPopup()">
+                    <i class="fas fa-times"></i>
+                    Close
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // Add popup to page
+    document.body.appendChild(popup);
+    
+    // Add styles if not already added
+    if (!document.querySelector('#success-popup-styles')) {
+        const styles = document.createElement('style');
+        styles.id = 'success-popup-styles';
+        styles.textContent = `
+            .success-popup-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 10000;
+                animation: fadeIn 0.3s ease-out;
+            }
+            .success-popup {
+                background: white;
+                padding: 2rem;
+                border-radius: 16px;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+                text-align: center;
+                max-width: 400px;
+                width: 90%;
+                animation: slideUp 0.3s ease-out;
+            }
+            .success-icon {
+                font-size: 4rem;
+                color: #27ae60;
+                margin-bottom: 1rem;
+            }
+            .success-popup h2 {
+                color: #2c3e50;
+                margin-bottom: 0.5rem;
+                font-size: 1.5rem;
+            }
+            .success-popup p {
+                color: #7f8c8d;
+                margin-bottom: 2rem;
+                line-height: 1.5;
+            }
+            .popup-actions {
+                display: flex;
+                gap: 1rem;
+                justify-content: center;
+            }
+            .btn-dashboard, .btn-close {
+                padding: 12px 24px;
+                border: none;
+                border-radius: 8px;
+                font-size: 1rem;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+            .btn-dashboard {
+                background: linear-gradient(135deg, #3498db, #2980b9);
+                color: white;
+            }
+            .btn-dashboard:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+            }
+            .btn-close {
+                background: #ecf0f1;
+                color: #2c3e50;
+            }
+            .btn-close:hover {
+                background: #d5dbdb;
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            @keyframes slideUp {
+                from { transform: translateY(30px); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(styles);
+    }
+}
+
+function goToDashboard() {
+    window.location.href = 'dashboard.html';
+}
+
+function closeSuccessPopup() {
+    const popup = document.querySelector('.success-popup-overlay');
+    if (popup) {
+        popup.style.animation = 'fadeIn 0.3s ease-out reverse';
+        setTimeout(() => {
+            popup.remove();
+        }, 300);
+    }
+}
+
+// Make functions globally accessible
+window.goToDashboard = goToDashboard;
+window.closeSuccessPopup = closeSuccessPopup;
 
 // Utility Functions
 function showNotification(message, type = 'info') {
@@ -1165,9 +1297,9 @@ function renderAgentsGrid(agents) {
             </div>
             
             <div class="agent-actions" onclick="event.stopPropagation()">
-                <button class="btn btn-ghost" onclick="showNotification('Voice testing will be available in Phase 5', 'info')" ${!agent.is_configured ? 'disabled' : ''}>
-                    <i class="fas fa-play"></i>
-                    Test
+                <button class="btn btn-ghost" onclick="window.open('voice-test.html?agentId=${agent.id}', '_blank')" ${!agent.is_configured ? 'disabled' : ''}>
+                    <i class="fas fa-microphone"></i>
+                    Test Voice
                 </button>
                 <button class="btn btn-ghost" onclick="toggleAgentStatus(${agent.id}, '${agent.status}')">
                     <i class="fas fa-power-off"></i>

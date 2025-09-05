@@ -49,7 +49,7 @@ You must analyze the provided information and generate natural, professional con
 
 Be specific, professional, and ensure the voice agent will provide excellent customer service while staying within appropriate boundaries.
 
-Return your response as a valid JSON object matching the AgentPromptComponents schema."""),
+{format_instructions}"""),
     
     ("user", """Please create voice agent components based on this onboarding data:
 
