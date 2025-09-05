@@ -9,6 +9,13 @@ from .database import Base
 # Database URL - SQLite for POC
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./voice_agent.db")
 
+# Make database path absolute if it's SQLite
+if DATABASE_URL.startswith("sqlite:///./"):
+    # Get the project root directory (parent of backend)
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    db_path = os.path.join(project_root, "voice_agent.db")
+    DATABASE_URL = f"sqlite:///{db_path}"
+
 # Create SQLAlchemy engine
 engine = create_engine(
     DATABASE_URL,
@@ -26,6 +33,15 @@ def create_tables():
 
 def get_db():
     """Dependency to get database session"""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+def get_db_session():
+    """Get database session for non-FastAPI contexts"""
     db = SessionLocal()
     try:
         yield db

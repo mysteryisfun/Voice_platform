@@ -4,7 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Voice Agent Test - Voice Platform</title>
-    <script src="https://unpkg.com/livekit-client@latest/dist/livekit-client.umd.js"></script>
+    <script type="module">
+        // Import LiveKit as ES module and expose it globally
+        import * as LiveKitSDK from 'https://cdn.skypack.dev/livekit-client@1.15.13';
+        
+        // Make it available globally
+        window.LiveKit = LiveKitSDK;
+        console.log('LiveKit ES module loaded and exposed globally:', LiveKitSDK);
+        
+        // Trigger initialization
+        window.dispatchEvent(new CustomEvent('livekitReady'));
+    </script>
     <style>
         * {
             margin: 0;
@@ -309,6 +319,17 @@
     <script>
         class VoiceAgentTester {
             constructor() {
+                // Check if LiveKit is loaded
+                if (typeof window.LiveKit === 'undefined') {
+                    console.error('LiveKit client library not loaded');
+                    document.getElementById('error-container').innerHTML = `
+                        <div class="error-message">
+                            LiveKit client library failed to load. Please refresh the page or check your internet connection.
+                        </div>
+                    `;
+                    return;
+                }
+
                 this.room = null;
                 this.isConnected = false;
                 this.isMuted = false;
@@ -404,8 +425,13 @@
 
             async connectToRoom() {
                 try {
+                    // Check if LiveKit is available
+                    if (typeof LiveKit === 'undefined') {
+                        throw new Error('LiveKit client library not loaded. Please refresh the page.');
+                    }
+
                     // Create LiveKit room instance
-                    this.room = new LiveKit.Room({
+                    this.room = new window.LiveKit.Room({
                         adaptiveStream: true,
                         dynacast: true
                     });
@@ -646,9 +672,42 @@
             }
         }
 
-        // Initialize the voice agent tester when the page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            new VoiceAgentTester();
+        // Initialize the voice agent tester when LiveKit is ready
+        window.addEventListener('livekitReady', () => {
+            console.log('LiveKit ready event received, initializing...');
+            if (typeof window.LiveKit !== 'undefined') {
+                console.log('LiveKit loaded successfully:', window.LiveKit);
+                new VoiceAgentTester();
+            } else {
+                console.error('LiveKit ready event fired but LiveKit not available');
+            }
+        });
+        
+        // Fallback for direct loading
+        window.addEventListener('load', () => {
+            // Wait a bit to see if the module loads
+            setTimeout(() => {
+                if (typeof window.LiveKit !== 'undefined') {
+                    console.log('LiveKit loaded via fallback:', window.LiveKit);
+                    new VoiceAgentTester();
+                } else {
+                    console.error('LiveKit failed to load completely');
+                    document.body.innerHTML = `
+                        <div style="padding: 20px; text-align: center; color: red;">
+                            <h2>Error: LiveKit Failed to Load</h2>
+                            <p>Unable to load the LiveKit client library.</p>
+                            <p>Please try:</p>
+                            <ul style="text-align: left; display: inline-block;">
+                                <li>Refreshing the page</li>
+                                <li>Checking your internet connection</li>
+                                <li>Disabling ad blockers or script blockers</li>
+                                <li>Using a different browser</li>
+                            </ul>
+                            <button onclick="location.reload()">Refresh Page</button>
+                        </div>
+                    `;
+                }
+            }, 2000);
         });
     </script>
 </body>

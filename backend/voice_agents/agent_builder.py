@@ -13,6 +13,7 @@ from langchain_openai import ChatOpenAI
 from langchain.schema import HumanMessage
 from langchain.output_parsers import PydanticOutputParser
 from .prompts import get_meta_agent_prompt, AgentPromptComponents
+from .tools import TOOL_METADATA, get_available_tools, get_tools_by_ids
 import os
 from dotenv import load_dotenv
 
@@ -67,6 +68,10 @@ class VoiceAgentBuilder:
         except Exception as e:
             logger.error(f"Error building agent configuration: {str(e)}")
             raise Exception(f"Failed to build agent configuration: {str(e)}")
+    
+    def get_agent_tools(self, enabled_tool_ids: list):
+        """Get tool function instances for the agent based on enabled tool IDs."""
+        return get_tools_by_ids(enabled_tool_ids)
     
     def _format_onboarding_data(self, data: Dict[str, Any]) -> Dict[str, str]:
         """Format onboarding data for the meta agent prompt."""
@@ -133,24 +138,28 @@ class VoiceAgentBuilder:
     def _format_tools_description(self, enabled_tools: list) -> str:
         """Format enabled tools into a description for the meta agent."""
         if not enabled_tools:
-            return "Basic knowledge base queries only"
+            return "Basic conversation only - no tools enabled"
         
-        tool_descriptions = {
-            'knowledge_base': 'Search company knowledge base and documents',
-            'lead_capture': 'Collect visitor contact information and requirements',
-            'appointment_booking': 'Schedule meetings and consultations',
-            'contact_info': 'Provide business contact information and hours',
-            'gmail_integration': 'Send emails and manage email communication',
-            'google_calendar': 'Check availability and schedule appointments in Google Calendar',
-            'human_transfer': 'Escalate to human representatives when needed'
-        }
+        # Get tool metadata from our tools module
+        available_tools = {tool["id"]: tool for tool in get_available_tools()}
         
         descriptions = []
-        for tool in enabled_tools:
-            if tool in tool_descriptions:
-                descriptions.append(f"- {tool_descriptions[tool]}")
+        for tool_id in enabled_tools:
+            if tool_id in available_tools:
+                tool = available_tools[tool_id]
+                descriptions.append(f"- {tool['name']}: {tool['description']}")
+            else:
+                # Fallback for unknown tool IDs
+                descriptions.append(f"- {tool_id}: Tool capability")
         
-        return '\n'.join(descriptions)
+        if not descriptions:
+            return "No valid tools selected"
+            
+        tool_text = '\n'.join(descriptions)
+        return f"""Available Tools:
+{tool_text}
+
+Note: The agent should naturally mention these capabilities when relevant to customer conversations."""
 
 # Global instance
 agent_builder = VoiceAgentBuilder()

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LiveKit Test</title>
+</head>
+<body>
+    <div id="test-results"></div>
+    
+    <script type="module">
+        // Try ES module import
+        try {
+            const LiveKitSDK = await import('https://cdn.skypack.dev/livekit-client@1.15.13');
+            window.LiveKit = LiveKitSDK;
+            console.log('✅ LiveKit ES module loaded successfully:', LiveKitSDK);
+            document.getElementById('test-results').innerHTML = '<p>✅ LiveKit loaded via ES modules</p>';
+        } catch (error) {
+            console.error('❌ Failed to load LiveKit ES module:', error);
+            document.getElementById('test-results').innerHTML = '<p>❌ Failed to load LiveKit ES module</p>';
+        }
+    </script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/livekit-client@1.15.0/dist/livekit-client.umd.js"></script>
+    <script>
+        function checkLiveKit() {
+            const results = document.getElementById('test-results');
+            
+            console.log('Checking for LiveKit...');
+            console.log('window.LiveKit:', typeof window.LiveKit);
+            console.log('window object keys containing "live":', Object.keys(window).filter(k => k.toLowerCase().includes('live')));
+            console.log('Global variables:', Object.keys(window).filter(k => k.startsWith('L')));
+            
+            // Check if it's available under a different name
+            const possibleNames = ['LiveKit', 'livekit', 'LiveKitClient', 'LK'];
+            for (const name of possibleNames) {
+                if (window[name]) {
+                    console.log(`Found under ${name}:`, window[name]);
+                    results.innerHTML += `<p>✅ Found LiveKit as: window.${name}</p>`;
+                    return;
+                }
+            }
+            
+            results.innerHTML = '<p>❌ LiveKit not found in global scope</p>';
+        }
+        
+        // Check immediately
+        checkLiveKit();
+        
+        // Check after 1 second
+        setTimeout(checkLiveKit, 1000);
+        
+        // Check after 3 seconds
+        setTimeout(checkLiveKit, 3000);
+    </script>
+</body>
+</html>

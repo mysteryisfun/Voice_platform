@@ -554,28 +554,29 @@
                     renderAgents(response.agents);
                     document.getElementById('agents-grid').classList.remove('hidden');
                     
+                    // AUTO-REFRESH DISABLED
                     // Check if any agents are in building/deployment states and set up auto-refresh
-                    const buildingAgents = response.agents.filter(agent => 
-                        ['initializing', 'configuring', 'deploying'].includes(agent.status)
-                    );
-                    if (buildingAgents.length > 0) {
-                        console.log(`Found ${buildingAgents.length} agents in progress. Setting up auto-refresh...`);
-                        // Clear any existing refresh timer
-                        if (window.dashboardRefreshTimer) {
-                            clearTimeout(window.dashboardRefreshTimer);
-                        }
-                        // Set up new refresh timer
-                        window.dashboardRefreshTimer = setTimeout(() => {
-                            console.log('Auto-refreshing dashboard...');
-                            loadDashboard();
-                        }, 3000); // Refresh every 3 seconds for faster updates
-                    } else {
-                        // Clear refresh timer if no agents are building
-                        if (window.dashboardRefreshTimer) {
-                            clearTimeout(window.dashboardRefreshTimer);
-                            window.dashboardRefreshTimer = null;
-                        }
-                    }
+                    // const buildingAgents = response.agents.filter(agent => 
+                    //     ['initializing', 'configuring', 'deploying'].includes(agent.status)
+                    // );
+                    // if (buildingAgents.length > 0) {
+                    //     console.log(`Found ${buildingAgents.length} agents in progress. Setting up auto-refresh...`);
+                    //     // Clear any existing refresh timer
+                    //     if (window.dashboardRefreshTimer) {
+                    //         clearTimeout(window.dashboardRefreshTimer);
+                    //     }
+                    //     // Set up new refresh timer
+                    //     window.dashboardRefreshTimer = setTimeout(() => {
+                    //         console.log('Auto-refreshing dashboard...');
+                    //         loadDashboard();
+                    //     }, 3000); // Refresh every 3 seconds for faster updates
+                    // } else {
+                    //     // Clear refresh timer if no agents are building
+                    //     if (window.dashboardRefreshTimer) {
+                    //         clearTimeout(window.dashboardRefreshTimer);
+                    //         window.dashboardRefreshTimer = null;
+                    //     }
+                    // }
                 } else {
                     document.getElementById('empty-state').classList.remove('hidden');
                 }
@@ -603,7 +604,7 @@
             
             grid.innerHTML = agents.map(agent => {
                 // Check if agent is in any building/deployment state
-                const isBuilding = ['initializing', 'configuring', 'deploying'].includes(agent.status);
+                const isBuilding = ['initializing', 'configuring', 'deploying', 'connecting'].includes(agent.status);
                 
                 if (isBuilding) {
                     // Get appropriate status message
@@ -617,11 +618,19 @@
                             break;
                         case 'configuring':
                             statusMessage = 'Configuring';
-                            description = 'Building personality and capabilities...';
+                            description = 'Configuring agent parameters...';
                             break;
                         case 'deploying':
-                            statusMessage = 'Deploying';
-                            description = 'Finalizing voice integration...';
+                            statusMessage = 'Starting';
+                            description = 'Starting voice agent worker...';
+                            break;
+                        case 'connecting':
+                            statusMessage = 'Connecting';
+                            description = 'Connecting to LiveKit...';
+                            break;
+                        case 'ready':
+                            statusMessage = 'Ready';
+                            description = 'Agent is ready for voice calls';
                             break;
                     }
                     
@@ -641,7 +650,7 @@
                                 <div class="loading-animation">
                                     <div class="loading-spinner"></div>
                                     <p>${description}</p>
-                                    <small>This may take a few moments while we configure your agent's personality and capabilities.</small>
+                                    <small>Starting agent process...</small>
                                 </div>
                             </div>
                         </div>
@@ -745,15 +754,22 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    showNotification('Voice agent deployment started!', 'success');
+                    showNotification('Voice agent started successfully!', 'success');
                     
                     // Update button states
                     deployBtn.style.display = 'none';
                     testBtn.style.display = 'inline-block';
                     stopBtn.style.display = 'inline-block';
                     
-                    // Check deployment status
-                    setTimeout(() => checkVoiceAgentStatus(agentId), 3000);
+                    // Check deployment status with shorter intervals for honest feedback
+                    checkVoiceAgentStatus(agentId);
+                    const statusInterval = setInterval(() => {
+                        checkVoiceAgentStatus(agentId).then(status => {
+                            if (status === 'deployed' || status === 'error') {
+                                clearInterval(statusInterval);
+                            }
+                        });
+                    }, 1000); // Check every second instead of waiting 3 seconds
                 } else {
                     throw new Error(result.message || 'Deployment failed');
                 }
@@ -768,6 +784,34 @@
             }
         }
         
+        async function checkVoiceAgentStatus(agentId) {
+            try {
+                const response = await fetch(`${API_BASE}/voice/${agentId}/status`);
+                
+                if (!response.ok) {
+                    console.error(`Failed to get agent status: ${response.statusText}`);
+                    return 'error';
+                }
+                
+                const result = await response.json();
+                
+                // Update agent display based on real status
+                if (result.status === 'error') {
+                    showNotification(`Agent ${agentId} failed: ${result.error_message}`, 'error');
+                    // Refresh the agents list to show error state
+                    loadAgents();
+                } else if (result.status === 'deployed' && result.worker_info) {
+                    console.log(`Agent ${agentId} is running (PID: ${result.worker_info.pid})`);
+                }
+                
+                return result.status;
+                
+            } catch (error) {
+                console.error('Error checking agent status:', error);
+                return 'error';
+            }
+        }
+
         async function testVoiceAgent(agentId) {
             try {
                 // Create a voice session

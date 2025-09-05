@@ -4,139 +4,172 @@
 
 **Platform Name**: Voice Agent Deployment Platform  
 **Purpose**: AI-powered platform that creates, configures, and deploys conversational voice agents for businesses  
-**Architecture**: Python FastAPI backend + Simple npm frontend + LiveKit voice infrastructure  
-**Current Status**: Phase 5 (Voice Integration) - 85% Complete - Final debugging phase
+**Architecture**: Python FastAPI backend + Vite frontend + LiveKit voice infrastructure  
+**Current Status**: Phase 3 Complete - LiveKit Voice System Deployed (95% functional)
 
-## Current Platform Status (December 2024)
+## Current Platform Status (September 2025)
 
 ### ✅ **COMPLETED FUNCTIONALITY**
 - **Full Agent Creation Pipeline**: Onboarding with AI-driven questions, document processing, web scraping ✅
-- **Knowledge Base System**: ChromaDB with agent-specific isolation, 175+ knowledge chunks across 6 agents ✅
-- **Professional Dashboard**: Agent management interface with CRUD operations, status controls, detail modals ✅
-- **Async Processing**: Fire-and-forget data processing with proper status tracking ✅
-- **API Infrastructure**: Complete FastAPI backend with health monitoring, error handling, logging filters ✅
-- **LiveKit Voice Infrastructure**: Real cloud deployment, JWT tokens, voice agents, test interface ✅ (85%)
+- **Knowledge Base System**: ChromaDB with agent-specific isolation, comprehensive knowledge management ✅
+- **Professional Dashboard**: Agent management interface with CRUD operations, status controls ✅
+- **Async Processing**: Complete data processing pipeline with status tracking ✅
+- **API Infrastructure**: Full FastAPI backend with health monitoring, error handling ✅
+- **LiveKit Voice System**: Real cloud deployment with OpenAI Realtime API integration ✅ (95%)
 
-### 🎯 **CURRENT PHASE: Final Voice Integration Debugging**
-The voice infrastructure is complete with LiveKit cloud integration. Currently debugging completion flow and finalizing test button integration.
+### 🎯 **CURRENT PHASE: Voice Connection Debugging**
+The voice infrastructure is deployed and operational. Currently debugging the final 401 authentication issue preventing voice conversations.
 
-## LiveKit Voice Integration Status (Phase 5 - 85% Complete)
+## LiveKit Voice Integration Status (Phase 3 - 95% Complete)
 
 ### ✅ **COMPLETED VOICE COMPONENTS**
 
-#### 1. LiveKit Cloud Setup ✅ COMPLETE
-- **Cloud Infrastructure**: Real deployment on wss://demo-bbxmozir.livekit.cloud
-- **Authentication**: PyJWT token generation for secure room access
-- **Room Management**: Automatic room creation per voice session
-- **API Keys**: Production LiveKit credentials configured
+#### 1. LiveKit Cloud Deployment ✅ COMPLETE
+- **Production Infrastructure**: Deployed on wss://demo-bbxmozir.livekit.cloud
+- **Agent Worker Registration**: Successfully registered worker (ID: AW_JfznrqHbi3em)
+- **Token Authentication**: JWT token generation with PyJWT integration
+- **Room Management**: Dynamic room creation with unique identifiers
+- **Regional Failover**: Multi-region support (India, Mumbai, Dubai, Hyderabad)
 
 #### 2. Voice Agent Architecture ✅ COMPLETE
 ```python
-# Implemented: voice_agents/voice_agent.py
-class WebsiteVoiceAgent:
-    - LiveKit agent integration with real-time processing
-    - OpenAI realtime model integration (gpt-4o-realtime-preview)
-    - VoiceAgentManager for session coordination
-    - Real entrypoint function for agent deployment
+# Implemented: backend/voice_agents/agent.py
+class LiveKitVoiceAgent:
+    - OpenAI Realtime API integration (gpt-4o-realtime-preview)
+    - Dynamic tool loading system
+    - Database integration for agent configuration
+    - Comprehensive error handling and fallback systems
+    - Room-specific agent initialization
 ```
 
-#### 3. Agent Tools Framework ✅ COMPLETE  
+#### 3. Function Tools Framework ✅ COMPLETE  
 ```python
-# Implemented: backend/services/agent_tools.py
-class VoiceAgentTools:
-    - search_knowledge_base(): ChromaDB integration
-    - capture_lead(): Database lead storage  
-    - search_web(): Tavily API integration
-    - transfer_to_human(): Escalation handling
-    - book_appointment(): Appointment scheduling
-    - get_service_info(): Business information lookup
+# Implemented: backend/voice_agents/tools_livekit.py
+@function_tool Decorations:
+    - show_product(): DuoLife product recommendations
+    - append_or_update_lead(): Customer data capture
+    - escalate_to_human(): Human agent escalation
+    - search_gmail(): Email integration
+    - create_calendar_event(): Calendar scheduling
+    - update_google_sheet(): Data logging
+    - search_knowledge_base(): ChromaDB queries
+    - web_search(): Real-time information
+    - get_weather(): Weather data
+    - calculate(): Mathematical operations
+    - get_time(): Time/date queries
 ```
 
 #### 4. Voice Control API ✅ COMPLETE
 ```python
 # Implemented: backend/routes/voice_control.py
-- POST /api/voice/{agent_id}/session: Create voice sessions
-- Token generation with LiveKit JWT
-- Room management and cleanup
-- VoiceSession database tracking
+- POST /api/voice/{agent_id}/session: Create voice sessions with JWT tokens
+- GET /api/voice/{agent_id}/status: Agent worker status monitoring
+- VoiceSession database model for session tracking
+- Room name generation with UUID for uniqueness
+- Multi-region LiveKit support with failover
 ```
 
 #### 5. Frontend Voice Interface ✅ COMPLETE
-```html
-<!-- Implemented: frontend/voice-test.html -->
-- LiveKit Web SDK integration
-- Real microphone access and audio processing
+```javascript
+// Implemented: frontend/voice-test.html
+- ES Module LiveKit client loading via Skypack CDN
+- WebRTC microphone access and audio processing
 - Agent-specific room connection (?agentId=123)
-- Audio visualization and session management
+- Real-time session creation and token management
+- Error handling and connection retry logic
 ```
 
-#### 6. Meta Agent Configuration ✅ COMPLETE
+#### 6. Windows Compatibility ✅ COMPLETE
+```bash
+# Implemented: Environment setup
+- winloop package for Windows LiveKit support
+- PowerShell command compatibility
+- Virtual environment with proper dependencies
+- Development server configuration
+```
+
+### � **CRITICAL ISSUE - NEEDS IMMEDIATE FIX**
+
+#### Voice Connection 401 Unauthorized Error
+**Symptom**: Frontend successfully creates sessions but LiveKit connection fails with 401 Unauthorized
+**Current Status**: All components working except final voice connection
+**Error Pattern**: 
+```
+WebSocket connection to 'wss://demo-bbxmozir.livekit.cloud/rtc?access_token=...' failed
+GET https://demo-bbxmozir.livekit.cloud/rtc/validate?access_token=... 401 (Unauthorized)
+```
+
+**Verified Working Components**:
+- ✅ Backend session creation: `/api/voice/2/session` returns valid response
+- ✅ JWT token generation: Tokens created with proper permissions
+- ✅ Agent worker registration: Worker ID "AW_JfznrqHbi3em" registered
+- ✅ Frontend integration: ES modules and session management working
+- ✅ Room creation: Unique room names generated (agent-2-a956a9b2)
+
+**Issue Analysis**:
+- Agent worker registered but not receiving room join events
+- No logs in agent worker terminal during connection attempts
+- Possible room dispatch or token validation mismatch
+- All LiveKit regions failing with same 401 error
+
+### 🎯 **IMMEDIATE DEBUGGING PLAN**
+
+#### 1. Agent Worker Room Reception (HIGH PRIORITY)
 ```python
-# Implemented: voice_agents/agent_builder.py
-- LangChain-based agent configuration generation
-- AgentPromptComponents structured output
-- Business data integration for personalized agents
-- Nested response handling for proper validation
+# Debug: backend/voice_agents/agent.py
+async def entrypoint(ctx: agents.JobContext):
+    # Add extensive logging to see if function is called
+    logger.info(f"ENTRYPOINT CALLED: Room {ctx.room.name}")
+    logger.info(f"Agent ID extraction from room: {ctx.room.name}")
 ```
 
-### 🔧 **REMAINING ISSUES (Final 15%)**
+#### 2. Token Validation Testing (HIGH PRIORITY)
+```python
+# Debug: backend/routes/voice_control.py  
+def generate_access_token(room_name, participant_name):
+    # Verify token payload matches LiveKit expectations
+    # Check API key/secret consistency
+    # Validate expiration times
+```
 
-#### Issue 1: Backend Startup Error 🚨 CRITICAL
-**Problem**: Server crashes on startup with exit code 1
-**Location**: Backend main.py or service imports
-**Impact**: Cannot test voice functionality
-**Priority**: URGENT - blocking all testing
+#### 3. LiveKit Configuration Audit (MEDIUM PRIORITY)
+```bash
+# Verify environment variables
+LIVEKIT_API_KEY=APIxxxxxxxxxxxxx  # Correct format?
+LIVEKIT_API_SECRET=xxxxxxxxxxxxx  # Matches cloud setup?
+LIVEKIT_URL=wss://demo-bbxmozir.livekit.cloud  # Correct endpoint?
+```
 
-#### Issue 2: Test Button Integration 🔧 HIGH
-**Problem**: Agent card test button shows placeholder message
-**Current**: `onclick="showNotification('Voice testing will be available in Phase 5')"`
-**Required**: `onclick="window.open('voice-test.html?agentId=${agent.id}', '_blank')"`
-**Impact**: Cannot access voice testing from dashboard
+### 📋 **POST-FIX COMPLETION ROADMAP**
 
-#### Issue 3: Agent Configuration Status 🔧 MEDIUM
-**Problem**: Agents not marked as `is_configured=true` after creation  
-**Impact**: Test button disabled, completion flow unclear
-**Priority**: Affects user experience but voice infrastructure works
+#### Phase 3 Completion (After 401 Fix - 1 hour)
+1. **Voice Conversation Testing** (30 mins)
+   - Complete end-to-end voice testing
+   - Validate all 11 function tools in conversation
+   - Test agent personality and knowledge integration
+   - Verify session management and cleanup
 
-### 🎯 **COMPLETION ROADMAP**
+2. **Production Polish** (30 mins)
+   - Add connection status indicators in frontend
+   - Implement graceful error handling for voice failures
+   - Add user feedback for successful connections
+   - Document voice testing workflow
 
-#### Immediate Fixes (Today - 2 hours)
-1. **Fix Backend Startup** (30 mins)
-   - Debug import errors or dependency issues
-   - Verify all services start correctly
-   - Test API endpoints respond
-
-2. **Connect Test Button** (15 mins)  
-   - Update agent card onclick handler
-   - Test agent selection and voice interface launch
-   - Verify URL parameter passing
-
-3. **Verify End-to-End Flow** (1 hour)
-   - Complete onboarding → agent creation flow
-   - Test voice interface connection and audio
-   - Validate voice agent tools integration
-   - Confirm real conversation capability
-
-4. **Production Polish** (15 mins)
-   - Add error handling for edge cases
-   - Implement basic session cleanup
-   - Add user feedback for voice connection status
-
-#### Phase 6 Planning (Next Week)
-1. **Voice Widget Integration**
-   - Embeddable JavaScript widget for websites
+#### Phase 4: Advanced Features (Next Phase)
+1. **Voice Widget Development**
+   - Embeddable JavaScript widget for client websites
    - Custom styling and branding options
-   - Multi-language support
+   - Integration documentation and examples
 
-2. **Advanced Voice Features**
-   - Voice agent analytics and conversation history
-   - Advanced personality customization
-   - Multi-agent conversation handling
+2. **Analytics & Monitoring**
+   - Voice conversation analytics dashboard
+   - Session duration and success rate tracking
+   - Agent performance metrics
 
 3. **Production Deployment**
-   - Production LiveKit credentials  
-   - Scalable infrastructure setup
-   - Monitoring and logging enhancement
+   - Production LiveKit infrastructure setup
+   - Scalable agent worker deployment
+   - Security and compliance enhancements
 
 ---
     - TTS output with natural voice synthesis

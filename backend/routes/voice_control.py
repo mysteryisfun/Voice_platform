@@ -40,16 +40,21 @@ def generate_access_token(room_name: str, participant_name: str, permissions: Di
             "canUpdateMetadata": True
         }
     
-    # Token payload
+    # Token payload using correct LiveKit structure
     now = int(time.time())
     payload = {
         "iss": LIVEKIT_API_KEY,
         "sub": participant_name,
-        "aud": "livekit",
+        "video": {
+            "room": room_name,
+            "roomJoin": True,
+            "canPublish": permissions.get("canPublish", True),
+            "canSubscribe": permissions.get("canSubscribe", True),
+            "canPublishData": permissions.get("canPublishData", True),
+            "canUpdateMetadata": permissions.get("canUpdateMetadata", True)
+        },
         "exp": now + 3600,  # 1 hour expiration
         "nbf": now - 10,    # Allow 10 seconds clock skew
-        "room": room_name,
-        "permissions": permissions
     }
     
     # Generate JWT token
@@ -81,6 +86,51 @@ class VoiceSessionManager:
         return session
 
 
+@router.get("/voice/{agent_id}/status")
+async def get_voice_agent_status(agent_id: int, db: Session = Depends(get_db)):
+    """Get the current status of a voice agent"""
+    try:
+        # Get agent
+        agent = DatabaseService.get_agent(db, agent_id)
+        if not agent:
+            raise HTTPException(status_code=404, detail="Agent not found")
+        
+        # Check if worker is tracked and still running
+        worker_info = None
+        if agent_id in active_workers:
+            worker = active_workers[agent_id]
+            process = worker["process"]
+            
+            # Check if process is still alive
+            if process.poll() is None:
+                worker_info = {
+                    "pid": worker.get("pid", process.pid),
+                    "started_at": worker["started_at"],
+                    "status": "running"
+                }
+            else:
+                # Process died, clean up and update status
+                del active_workers[agent_id]
+                if agent.status == 'deployed':
+                    agent.status = 'error'
+                    agent.special_instructions = "Worker process died unexpectedly"
+                    agent.updated_at = datetime.utcnow()
+                    db.commit()
+        
+        return {
+            "agent_id": agent_id,
+            "status": agent.status,
+            "worker_info": worker_info,
+            "last_updated": agent.updated_at.isoformat() if agent.updated_at else None,
+            "error_message": agent.special_instructions if agent.status == 'error' else None
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get agent status: {str(e)}")
+
+
 @router.post("/voice/{agent_id}/deploy")
 async def deploy_voice_agent(agent_id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     """Deploy a voice agent to LiveKit"""
@@ -106,43 +156,78 @@ async def deploy_voice_agent(agent_id: int, background_tasks: BackgroundTasks, d
         # Start the voice agent worker
         def start_worker():
             try:
+                # Update agent status to deploying
+                agent.status = 'deploying'
+                agent.updated_at = datetime.utcnow()
+                db.commit()
+                
                 # Get the project root directory
                 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-                voice_agent_path = os.path.join(project_root, "voice_agents", "voice_agent.py")
+                voice_agent_path = os.path.join(project_root, "voice_agents", "agent.py")
                 
                 # Set environment variables for the worker
                 env = os.environ.copy()
                 env['AGENT_ID'] = str(agent_id)
                 
-                # Start the worker process
+                # Start the worker process using LiveKit agent CLI pattern
                 process = subprocess.Popen(
-                    ["python", voice_agent_path],
+                    ["python", voice_agent_path, "dev"],  # Use dev mode for development
                     cwd=project_root,
                     env=env,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE
                 )
                 
+                # Wait a moment to see if process starts successfully
+                time.sleep(1)
+                poll_result = process.poll()
+                
+                if poll_result is not None:
+                    # Process died immediately
+                    stdout, stderr = process.communicate()
+                    error_msg = stderr.decode() if stderr else "Process died immediately"
+                    raise Exception(f"Worker failed to start: {error_msg}")
+                
                 # Track the worker
                 active_workers[agent_id] = {
                     "process": process,
                     "started_at": datetime.utcnow().isoformat(),
-                    "status": "running"
+                    "status": "running",
+                    "pid": process.pid
                 }
                 
-                # Update agent status
-                agent.status = 'deployed'
+                # Update agent status to connecting (waiting for LiveKit connection)
+                agent.status = 'connecting'
                 agent.updated_at = datetime.utcnow()
                 db.commit()
                 
-                print(f"Voice agent {agent_id} deployed successfully")
+                # Give it a few seconds to connect to LiveKit, then mark as deployed
+                time.sleep(3)
+                
+                # Check if process is still running
+                if process.poll() is None:
+                    # Process is still running, assume connected
+                    agent.status = 'deployed'
+                    agent.updated_at = datetime.utcnow()
+                    db.commit()
+                    print(f"Voice agent {agent_id} deployed successfully (PID: {process.pid})")
+                else:
+                    # Process died
+                    stdout, stderr = process.communicate()
+                    error_msg = stderr.decode() if stderr else "Process died after starting"
+                    raise Exception(f"Worker died during startup: {error_msg}")
                 
             except Exception as e:
                 print(f"Error starting worker for agent {agent_id}: {str(e)}")
                 # Update agent status to error
                 agent.status = 'error'
                 agent.special_instructions = f"Deployment failed: {str(e)}"
+                agent.updated_at = datetime.utcnow()
                 db.commit()
+                
+                # Clean up worker tracking
+                if agent_id in active_workers:
+                    del active_workers[agent_id]
         
         # Start worker in background
         background_tasks.add_task(start_worker)
@@ -183,11 +268,17 @@ async def stop_voice_agent(agent_id: int, db: Session = Depends(get_db)):
         process = worker_info.get("process")
         
         if process and process.poll() is None:  # Process is still running
-            process.terminate()
             try:
+                print(f"Stopping voice agent {agent_id} (PID: {process.pid})")
+                process.terminate()
                 process.wait(timeout=5)  # Wait up to 5 seconds for graceful shutdown
+                print(f"Voice agent {agent_id} stopped gracefully")
             except subprocess.TimeoutExpired:
+                print(f"Force killing voice agent {agent_id} (PID: {process.pid})")
                 process.kill()  # Force kill if needed
+                process.wait()
+        else:
+            print(f"Voice agent {agent_id} process was already dead")
         
         # Remove from active workers
         del active_workers[agent_id]
@@ -252,7 +343,7 @@ async def get_voice_agent_status(agent_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/voice/{agent_id}/session")
-async def create_voice_session(agent_id: int, db: Session = Depends(get_db)):
+async def create_voice_session(agent_id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     """Create a new voice session for an agent"""
     try:
         # Get agent
@@ -260,7 +351,54 @@ async def create_voice_session(agent_id: int, db: Session = Depends(get_db)):
         if not agent:
             raise HTTPException(status_code=404, detail="Agent not found")
         
-        if agent.status not in ['created', 'deployed']:
+        # Auto-deploy agent if not already deployed
+        if agent.status == 'created':
+            # Deploy the agent automatically
+            def start_worker():
+                try:
+                    # Get the project root directory
+                    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                    voice_agent_path = os.path.join(project_root, "voice_agents", "agent.py")
+                    
+                    # Set environment variables for the worker
+                    env = os.environ.copy()
+                    env['AGENT_ID'] = str(agent_id)
+                    
+                    # Start the worker process using LiveKit agent CLI pattern
+                    process = subprocess.Popen(
+                        ["python", voice_agent_path, "dev"],  # Use dev mode for development
+                        cwd=project_root,
+                        env=env,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE
+                    )
+                    
+                    # Track the worker
+                    active_workers[agent_id] = {
+                        "process": process,
+                        "started_at": datetime.utcnow().isoformat(),
+                        "status": "running"
+                    }
+                    
+                    # Update agent status
+                    agent.status = 'deployed'
+                    agent.updated_at = datetime.utcnow()
+                    db.commit()
+                    
+                    print(f"Voice agent {agent_id} auto-deployed for session")
+                    
+                except Exception as e:
+                    print(f"Error auto-deploying agent {agent_id}: {str(e)}")
+                    agent.status = 'error'
+                    agent.special_instructions = f"Auto-deployment failed: {str(e)}"
+                    db.commit()
+            
+            # Start worker in background
+            background_tasks.add_task(start_worker)
+            agent.status = 'deploying'  # Set status immediately
+            db.commit()
+        
+        elif agent.status not in ['deployed', 'deploying']:
             raise HTTPException(status_code=400, detail=f"Agent is not ready for sessions (status: {agent.status})")
         
         # Generate room name
@@ -269,8 +407,23 @@ async def create_voice_session(agent_id: int, db: Session = Depends(get_db)):
         # Create session record
         session = VoiceSessionManager.create_voice_session(db, agent_id, room_name)
         
-        # Generate LiveKit connection token (you'll need to implement this based on your LiveKit setup)
-        # For now, we'll return the room name for the frontend to connect
+        # Generate token for playground testing
+        playground_token = generate_access_token(room_name, f"user-{session.id}")
+        
+        # Print connection details for easy copying
+        print(f"\n{'='*80}")
+        print(f"🎤 VOICE SESSION CREATED - LIVEKIT PLAYGROUND DETAILS")
+        print(f"{'='*80}")
+        print(f"🏠 Room Name: {room_name}")
+        print(f"🌐 WebSocket URL: {LIVEKIT_WS_URL}")
+        print(f"🔑 Access Token: {playground_token}")
+        print(f"{'='*80}")
+        print(f"💡 COPY THESE DETAILS TO LIVEKIT PLAYGROUND:")
+        print(f"   1. Go to: https://agents-playground.livekit.io")
+        print(f"   2. Room Name: {room_name}")
+        print(f"   3. WebSocket URL: {LIVEKIT_WS_URL}")
+        print(f"   4. Access Token: {playground_token}")
+        print(f"{'='*80}\n")
         
         return {
             "success": True,
@@ -279,11 +432,19 @@ async def create_voice_session(agent_id: int, db: Session = Depends(get_db)):
             "agent_id": agent_id,
             "agent_name": agent.name,
             "voice_id": agent.voice_id or 'alloy',
-            "status": "ready",
-            "message": "Voice session created successfully",
-            # Add LiveKit connection info
+            "status": "ready" if agent.status == 'deployed' else "deploying",
+            "message": "Voice session created successfully" if agent.status == 'deployed' else "Voice session created, agent is deploying...",
+            # Add LiveKit connection info (keeping original field names for frontend compatibility)
             "livekit_token": generate_access_token(room_name, f"user-{session.id}"),
-            "livekit_ws_url": LIVEKIT_WS_URL
+            "livekit_ws_url": LIVEKIT_WS_URL,  # Keep original field name
+            # Debug info for playground testing
+            "playground_info": {
+                "room_name": room_name,
+                "websocket_url": LIVEKIT_WS_URL,
+                "token": generate_access_token(room_name, f"user-{session.id}"),
+                "playground_url": "https://agents-playground.livekit.io",
+                "instructions": f"Use room '{room_name}' with the provided token"
+            }
         }
         
     except HTTPException:

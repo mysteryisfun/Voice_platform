@@ -15,9 +15,8 @@ from livekit.plugins import openai, noise_cancellation
 from livekit.agents.llm import ChatContext, ChatMessage
 
 from voice_agents.prompts import get_voice_agent_prompt, get_greeting_prompt
-from backend.services.agent_tools import get_agent_tools
-from backend.services.database_service import DatabaseService
-from backend.models import get_db
+from services.database_service import DatabaseService
+from models import get_db
 
 load_dotenv()
 
@@ -56,7 +55,8 @@ class WebsiteVoiceAgent(Agent):
         # Build the system instructions
         instructions = self._build_system_instructions()
         
-        # Get agent tools
+        # Get agent tools from our tools.py
+        from voice_agents.tools import get_agent_tools
         agent_tools = get_agent_tools(agent_id)
         
         super().__init__(

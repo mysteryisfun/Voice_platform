@@ -10,6 +10,7 @@ dependencies = [
     "livekit",
     "livekit-agents[openai]",
     "livekit-plugins-openai",
+    "livekit-agents[voiceassistant]",
     "livekit-plugins-noise-cancellation",
     "langchain",
     "langchain-openai",
@@ -28,4 +29,7 @@ dependencies = [
     "python-jose[cryptography]",
     "passlib[bcrypt]",
     "PyJWT",
+    "pandas",
+    "openpyxl",
+    "winloop>=0.2.2",
 ]
